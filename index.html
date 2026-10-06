@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AUGUSTX HOME COFFEE</title>
+    <!-- เพิ่ม Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root { --blue: #1a365d; --black: #111111; --white: #f8f9fa; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--white); color: var(--black); margin: 0; padding: 0; background-image: url('images/bg.jpg'); background-size: cover; background-attachment: fixed; background-position: center; }
@@ -276,6 +279,20 @@
     </div>
 
     <script>
+        // --- 1. การเชื่อมต่อ Firebase Database ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDAJUEFUwkieMGFxRIZ6vRwzLbXF31c_BM",
+            authDomain: "augx-d75c2.firebaseapp.com",
+            databaseURL: "https://augx-d75c2-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "augx-d75c2",
+            storageBucket: "augx-d75c2.firebasestorage.app",
+            messagingSenderId: "246689770554",
+            appId: "1:246689770554:web:9a7e24546ee36c2bf2d903"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        // ----------------------------------------
+
         let cart = [];
         let currentOrderNumberStr = ""; 
         let nextOrderCountToSave = 1; 
@@ -371,7 +388,6 @@
             return result;
         }
 
-        // --- เปลี่ยนฟังก์ชันสร้างรหัส: ถ้าเป็นคนขาย ให้ขึ้นต้นด้วย AUG ---
         function generateOrderNumberData(isCashier) {
             let d = new Date();
             let day = String(d.getDate()).padStart(2, '0');
@@ -381,7 +397,7 @@
             
             let prefix = "PC";
             if (isCashier) {
-                prefix = "AUG"; // ให้ขึ้นต้นด้วย AUG เมื่อสั่งจากหน้าร้าน
+                prefix = "AUG"; 
             } else {
                 let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 prefix = isMobile ? "MB" : "PC";
@@ -399,7 +415,6 @@
         function showReceiptPreview() {
             if (cart.length === 0) { alert('ກະລຸນາເລືອກສິນຄ້າກ່ອນ!'); return; }
             
-            // ตรวจสอบสถานะว่าถูกเปิดอยู่ในกรอบของ Cashier หรือไม่
             const isCashierMode = new URLSearchParams(window.location.search).get('mode') === 'cashier';
             
             let d = new Date();
@@ -440,7 +455,9 @@
             let totalPriceStr = document.getElementById('preview-total').innerText.replace(' LAK', '').replace(/,/g, '');
             const isCashierMode = new URLSearchParams(window.location.search).get('mode') === 'cashier';
 
-            // ส่งข้อมูลไปหน้า Kitchen พร้อมฝังระบุว่าเป็น store
+            let todayStr = new Date().toLocaleDateString('en-GB'); 
+            let timeStr = new Date().toLocaleTimeString('th-TH').slice(0,5);
+
             let orderForKitchen = {
                 table: currentOrderNumberStr, 
                 source: isCashierMode ? 'store' : 'online', 
@@ -450,36 +467,40 @@
                     price: item.unitPrice
                 })),
                 total: parseInt(totalPriceStr),
-                time: new Date().toLocaleTimeString('th-TH').slice(0,5),
-                status: 'pending'
+                time: timeStr,
+                date: todayStr,
+                status: 'pending',
+                timestamp: Date.now()
             };
 
-            let existingOrders = JSON.parse(localStorage.getItem('customerOrders')) || [];
-            existingOrders.push(orderForKitchen);
-            localStorage.setItem('customerOrders', JSON.stringify(existingOrders));
-
-            if (!isCashierMode) {
-                // สำหรับลูกค้า: เด้งไป WhatsApp
-                let text = `ສະບາຍດີ ຕ້ອງການສັ່ງອໍເດີ້ຈາກເວັບໄຊຕ໌:\n`;
-                text += `ເລກທີອໍເດີ້: ${currentOrderNumberStr}\n\n`;
-                cart.forEach((item, index) => { 
-                    text += `${index + 1}. ${item.name} x ${item.qty} ແກ້ວ\n`; 
-                    if (item.note && item.note.trim() !== "") {
-                        text += `  *ໝາຍເຫດ: ${item.note.trim()}\n`;
-                    }
-                });
-                text += `\nລົບກວນທາງຮ້ານສະຫຼຸບຍອດ ແລະ ຂໍຄິວອາໂຄດສຳລັບຊຳລະເງິນດ້ວຍຄຮັບ/ຄ่ะ`;
+            // 2. ยิงข้อมูลขึ้น Firebase Database แบบ Realtime
+            database.ref('orders').push(orderForKitchen)
+            .then(() => {
+                if (!isCashierMode) {
+                    let text = `ສະບາຍດີ ຕ້ອງການສັ່ງອໍເດີ້ຈາກເວັບໄຊຕ໌:\n`;
+                    text += `ເລກທີອໍເດີ້: ${currentOrderNumberStr}\n\n`;
+                    cart.forEach((item, index) => { 
+                        text += `${index + 1}. ${item.name} x ${item.qty} ແກ້ວ\n`; 
+                        if (item.note && item.note.trim() !== "") {
+                            text += `  *ໝາຍເຫດ: ${item.note.trim()}\n`;
+                        }
+                    });
+                    text += `\nລົບກວນທາງຮ້ານສະຫຼຸບຍອດ ແລະ ຂໍຄິວອາໂຄດສຳລັບຊຳລະເງິນດ້ວຍຄຮັບ/ຄ่ะ`;
+                    
+                    let waUrl = `https://wa.me/8562077666667?text=${encodeURIComponent(text)}`;
+                    window.open(waUrl, '_blank');
+                } else {
+                    alert('✅ ບັນທຶກອໍເດີ້ເຂົ້າໜ້າຈໍຄົວສຳເລັດແລ້ວ!');
+                }
                 
-                let waUrl = `https://wa.me/8562077666667?text=${encodeURIComponent(text)}`;
-                window.open(waUrl, '_blank');
-            } else {
-                // สำหรับคนขาย: แจ้งเตือนในกรอบเท่านั้น
-                alert('✅ ບັນທຶກອໍເດີ້ເຂົ້າໜ້າຈໍຄົວສຳເລັດແລ້ວ!');
-            }
-            
-            document.getElementById('receipt-modal').style.display = 'none';
-            cart = [];
-            updateCartUI();
+                document.getElementById('receipt-modal').style.display = 'none';
+                cart = [];
+                updateCartUI();
+            })
+            .catch((error) => {
+                console.error("Error writing document: ", error);
+                alert("เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง");
+            });
         }
 
         window.addEventListener('DOMContentLoaded', () => {
