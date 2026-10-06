@@ -50,7 +50,12 @@
         .preview-brand { text-align: center; margin: 0; font-size: 1.8rem; font-weight: 900; letter-spacing: 1px; }
         .preview-sub { text-align: center; margin: 3px 0 12px; font-size: 0.9rem; letter-spacing: 2px; }
         .preview-date { text-align: center; font-size: 0.8rem; margin-bottom: 5px; }
-        .preview-order-num { text-align: center; font-size: 0.9rem; font-weight: bold; margin-bottom: 10px; color: var(--blue); }
+        .preview-order-num { text-align: center; font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; color: var(--blue); }
+        
+        .preview-customer-box { text-align: center; margin-bottom: 10px; }
+        .customer-name-input { width: 85%; padding: 6px 10px; border: 1px dashed #1a365d; border-radius: 4px; font-size: 1rem; font-weight: bold; font-family: inherit; text-align: center; background-color: #f8fafc; color: #1a365d; }
+        .customer-name-input:focus { outline: none; border-style: solid; background-color: #fff; }
+
         .preview-dashed { border-top: 1px dashed #aaa; margin: 10px 0; }
         .preview-item-group { margin-bottom: 18px; }
         .preview-item { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.95rem; }
@@ -258,6 +263,12 @@
                 <div class="preview-sub">HOME COFFEE</div>
                 <div class="preview-date" id="preview-date"></div>
                 <div class="preview-order-num" id="preview-order-num"></div>
+                
+                <!-- ช่องกรอกชื่อลูกค้า แก้ไขคำว่า ຖ້າມີ -->
+                <div class="preview-customer-box">
+                    <input type="text" id="customer-name-input" class="customer-name-input" placeholder="+ ເພີ່ມຊື່ (ຖ້າມີ)">
+                </div>
+
                 <div class="preview-dashed"></div>
                 <div id="preview-items"></div>
                 <div class="preview-dashed"></div>
@@ -279,7 +290,6 @@
     </div>
 
     <script>
-        // --- 1. การเชื่อมต่อ Firebase Database ---
         const firebaseConfig = {
             apiKey: "AIzaSyDAJUEFUwkieMGFxRIZ6vRwzLbXF31c_BM",
             authDomain: "augx-d75c2.firebaseapp.com",
@@ -291,7 +301,6 @@
         };
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        // ----------------------------------------
 
         let cart = [];
         let currentOrderNumberStr = ""; 
@@ -430,6 +439,8 @@
             nextOrderCountToSave = orderData.nextCount;
             
             document.getElementById('preview-order-num').innerText = "Order No: " + currentOrderNumberStr;
+            document.getElementById('customer-name-input').value = ""; 
+            
             let html = '';
             let total = 0;
             cart.forEach((item, index) => {
@@ -451,19 +462,26 @@
             document.getElementById('cart').classList.add('open');
         }
 
-        // --- แก้ไขระบบใหม่: สั่งให้ทำงานทันที ไม่ต้องรอเซิร์ฟเวอร์โหลด ---
         function confirmWhatsApp() {
             localStorage.setItem('augustx_order_date', orderDateToSave);
             localStorage.setItem('augustx_order_count', nextOrderCountToSave);
 
             let totalPriceStr = document.getElementById('preview-total').innerText.replace(' LAK', '').replace(/,/g, '');
             const isCashierMode = new URLSearchParams(window.location.search).get('mode') === 'cashier';
+            
+            let customName = document.getElementById('customer-name-input').value.trim();
+            let displayTable = currentOrderNumberStr;
+            if (customName !== "") {
+                displayTable += ` (${customName})` + (isCashierMode ? ' [ໜ້າຮ້ານ]' : '');
+            } else {
+                if (isCashierMode) displayTable += ' [ໜ້າຮ້ານ]';
+            }
 
             let todayStr = new Date().toLocaleDateString('en-GB'); 
             let timeStr = new Date().toLocaleTimeString('th-TH').slice(0,5);
 
             let orderForKitchen = {
-                table: currentOrderNumberStr, 
+                table: displayTable, 
                 source: isCashierMode ? 'store' : 'online', 
                 items: cart.map(item => ({
                     name: item.name + (item.note ? ` [${item.note}]` : ''),
@@ -477,10 +495,12 @@
                 timestamp: Date.now()
             };
 
-            // ทริคกันค้าง: ให้รันการเด้งไป WhatsApp / โชว์ข้อความสำเร็จ ทันที!
             if (!isCashierMode) {
                 let text = `ສະບາຍດີ ຕ້ອງການສັ່ງອໍເດີ້ຈາກເວັບໄຊຕ໌:\n`;
-                text += `ເລກທີອໍເດີ້: ${currentOrderNumberStr}\n\n`;
+                text += `ເລກທີອໍເດີ້: ${currentOrderNumberStr}\n`;
+                if(customName !== "") text += `ຊື່ລູກຄ້າ: ${customName}\n`;
+                text += `\n`;
+                
                 cart.forEach((item, index) => { 
                     text += `${index + 1}. ${item.name} x ${item.qty} ແກ້ວ\n`; 
                     if (item.note && item.note.trim() !== "") {
@@ -495,12 +515,10 @@
                 alert('✅ ບັນທຶກອໍເດີ້ເຂົ້າໜ້າຈໍຄົວສຳເລັດແລ້ວ!');
             }
             
-            // ปิดหน้าต่างบิล และล้างตะกร้าทันที
             document.getElementById('receipt-modal').style.display = 'none';
             cart = [];
             updateCartUI();
 
-            // ค่อยให้ระบบแอบพยายามส่งขึ้นฐานข้อมูลทีหลังแบบเงียบๆ
             try {
                 database.ref('orders').push(orderForKitchen);
             } catch(error) {
