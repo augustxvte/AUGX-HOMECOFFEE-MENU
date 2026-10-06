@@ -19,21 +19,40 @@
         .sound-toggle-btn { padding: 10px 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; background-color: #e2e8f0; color: #64748b; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: 0.3s; }
         .sound-toggle-btn.on { background-color: #10b981; color: white; }
         .tracking-title { text-align: center; color: #1a365d; margin-bottom: 25px; font-size: 24px; font-weight: bold; }
-        .tabs { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; }
-        .tab-btn { padding: 12px 25px; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; background-color: #e2e8f0; color: #64748b; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
+        .tab-btn { padding: 12px 20px; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; background-color: #e2e8f0; color: #64748b; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .tab-btn:hover { background-color: #cbd5e1; }
         .tab-btn.active { background-color: #1a365d; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
         .order-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .order-card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 6px solid #d97706; display: flex; flex-direction: column; }
+        .order-card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 6px solid #d97706; display: flex; flex-direction: column; position: relative; }
         .order-card.completed { border-left-color: #10b981; opacity: 0.85; background: #f8fafc; }
-        .order-header { font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; }
-        .order-items { list-style: none; padding: 0; margin: 10px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 10px 0; flex-grow: 1; }
+        .order-card.cancelled { border-left-color: #ef4444; opacity: 0.8; background: #fef2f2; }
+        
+        .order-header { font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 12px; }
+        
+        .right-header-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+        .btn-cancel-x { background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; width: 28px; height: 28px; border-radius: 50%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: 0.2s; }
+        .btn-cancel-x:hover { background: #ef4444; color: white; }
+        
+        .order-sequence-badge { font-size: 13px; font-weight: bold; background: #e2e8f0; color: #1a365d; padding: 2px 8px; border-radius: 6px; }
+
+        /* สไตล์ลิงก์เบอร์โทรให้กดคลิกได้ง่ายและสวยงาม */
+        .phone-link { color: #0284c7; font-weight: 500; text-decoration: none; transition: 0.2s; display: inline-block; }
+        .phone-link:hover { color: #0369a1; text-decoration: underline; }
+
+        .order-items { list-style: none; padding: 0; margin: 10px 0; border-bottom: 1px solid #eee; padding-bottom: 10px; flex-grow: 1; }
         .order-items li { margin-bottom: 8px; display: flex; justify-content: space-between; font-size: 14px; }
         .btn-done { background-color: #10b981; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; }
         .btn-done:hover { background-color: #059669; }
+        .btn-restore { background-color: #3b82f6; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; }
+        .btn-restore:hover { background-color: #2563eb; }
+
         .no-order { text-align: center; grid-column: 1 / -1; color: #64748b; font-size: 18px; margin-top: 60px; }
         .clear-btn-disabled { background: #cbd5e1; color: #64748b; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: not-allowed; opacity: 0.7; }
         .date-separator { grid-column: 1 / -1; background: #e2e8f0; padding: 10px 15px; border-radius: 8px; font-weight: bold; margin: 10px 0; color: #334155; border-left: 4px solid #1a365d; }
+        
         #posOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: #fff; flex-direction: column; }
         .pos-header { background-color: #1a365d; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .pos-header h2 { margin: 0; font-size: 20px; letter-spacing: 1px; }
@@ -61,7 +80,8 @@
             
             <div class="tabs">
                 <button id="btn-active" class="tab-btn active" onclick="switchTab('active')">🔔 ອໍເດີ້ໃໝ່ (ກຳລັງເຮັດ)</button>
-                <button id="btn-history" class="tab-btn" onclick="switchTab('history')">🕒 ປະຫວັດອໍເດີ້ (ສຳເລັດແລ້ວ)</button>
+                <button id="btn-history" class="tab-btn" onclick="switchTab('history')">🕒 ປະຫວັດ (ສຳເລັດແລ້ວ)</button>
+                <button id="btn-cancelled" class="tab-btn" onclick="switchTab('cancelled')">🚫 ອໍເດີ້ທີ່ຖືກຍົກເລີກ</button>
             </div>
 
             <div id="orderListArea">
@@ -81,7 +101,6 @@
     </div>
 
     <script>
-        // --- การเชื่อมต่อ Firebase Database ---
         const firebaseConfig = {
             apiKey: "AIzaSyDAJUEFUwkieMGFxRIZ6vRwzLbXF31c_BM",
             authDomain: "augx-d75c2.firebaseapp.com",
@@ -95,11 +114,11 @@
         const database = firebase.database();
 
         let currentTab = 'active';
-        let soundEnabled = true; // ตั้งค่าเริ่มต้นให้เสียงเปิดทำงานทันที
+        let soundEnabled = true;
         let lastPendingCount = 0;
         let lastAlertTime = Date.now();
         let allFirebaseOrders = [];
-        let isFirstLoad = true; // ป้องกันเสียงดังตอนเปิดหน้าเว็บครั้งแรก
+        let isFirstLoad = true;
 
         function openPOS() {
             document.getElementById('posFrame').src = 'index.html?mode=cashier';
@@ -111,7 +130,6 @@
             document.getElementById('posFrame').src = ''; 
         }
 
-        // ปุ่มกดเปิด-ปิดเสียง
         function toggleSound() {
             soundEnabled = !soundEnabled;
             let btn = document.getElementById('soundBtn');
@@ -132,10 +150,10 @@
             currentTab = tab;
             document.getElementById('btn-active').className = tab === 'active' ? 'tab-btn active' : 'tab-btn';
             document.getElementById('btn-history').className = tab === 'history' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('btn-cancelled').className = tab === 'cancelled' ? 'tab-btn active' : 'tab-btn';
             renderOrders();
         }
 
-        // ดึงข้อมูลแบบ Realtime จาก Firebase
         database.ref('orders').on('value', (snapshot) => {
             let tempOrders = [];
             snapshot.forEach((childSnapshot) => {
@@ -151,25 +169,25 @@
             const orderListArea = document.getElementById('orderListArea');
             let todayStr = new Date().toLocaleDateString('en-GB'); 
 
-            let activeOrders = allFirebaseOrders.filter(o => o.status !== 'completed');
+            let activeOrders = allFirebaseOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
             let completedOrders = allFirebaseOrders.filter(o => o.status === 'completed');
+            let cancelledOrders = allFirebaseOrders.filter(o => o.status === 'cancelled');
             
             let currentPendingCount = activeOrders.length;
 
-            // ระบบเสียงแจ้งเตือนอัตโนมัติ
             if (soundEnabled && !isFirstLoad) {
                 if (currentPendingCount > lastPendingCount) {
                     document.getElementById('alertSound').play().catch(e => console.log(e));
                     lastAlertTime = Date.now();
                 } else if (currentPendingCount > 0) {
-                    if (Date.now() - lastAlertTime >= 300000) { // เตือนซ้ำทุก 5 นาที
+                    if (Date.now() - lastAlertTime >= 300000) { 
                         document.getElementById('alertSound').play().catch(e => console.log(e));
                         lastAlertTime = Date.now();
                     }
                 }
             }
             lastPendingCount = currentPendingCount;
-            isFirstLoad = false; // ปลดล็อคหลังจากโหลดรอบแรกเสร็จ
+            isFirstLoad = false;
 
             let html = '';
 
@@ -177,16 +195,11 @@
                 if (activeOrders.length === 0) {
                     html = '<div class="no-order">😴 ຍັງບໍ່ມີອໍເດີ້ໃໝ່ໃນຂະນະນີ້...</div>';
                 } else {
-                    let cardsHtml = activeOrders.map((order, index) => generateOrderCard(order, index)).join('');
+                    let cardsHtml = activeOrders.map((order, index) => generateOrderCard(order, index + 1)).join('');
                     html = `<div class="order-container">${cardsHtml}</div>`;
                 }
-            } else {
-                html += `
-                    <div style="text-align: right; margin-bottom: 15px;">
-                        <button class="clear-btn-disabled" disabled>🔒 ລະບົບແບ່ງເກັບປະຫວັດເປັນລາຍວັນອັດຕະໂນມັດ</button>
-                    </div>
-                `;
-
+            } else if (currentTab === 'history') {
+                html += `<div style="text-align: right; margin-bottom: 15px;"><button class="clear-btn-disabled" disabled>🔒 ລະບົບແບ່ງເກັບປະຫວັດເປັນລາຍວັນອັດຕະໂນມັດ</button></div>`;
                 if (completedOrders.length === 0) {
                     html += '<div class="no-order">📭 ຍັງບໍ່ມີປະຫວັດອໍເດີ້ທີ່ເຮັດສຳເລັດແລ້ວ...</div>';
                 } else {
@@ -196,35 +209,63 @@
                         if(!groups[d]) groups[d] = [];
                         groups[d].push(order);
                     });
-
-                    let sortedDates = Object.keys(groups).sort((a,b) => {
-                        let pa = a.split('/').reverse().join('');
-                        let pb = b.split('/').reverse().join('');
-                        return pb.localeCompare(pa);
-                    });
-
+                    let sortedDates = Object.keys(groups).sort((a,b) => b.split('/').reverse().join('').localeCompare(a.split('/').reverse().join('')));
                     html += `<div class="order-container">`;
                     sortedDates.forEach(date => {
                         html += `<div class="date-separator">📅 ວັນທີ: ${date}</div>`;
-                        let cardsHtml = groups[date].map((order, index) => generateOrderCard(order, index)).join('');
+                        let cardsHtml = groups[date].map((order, idx) => generateOrderCard(order, idx + 1)).join('');
                         html += cardsHtml;
                     });
                     html += `</div>`;
+                }
+            } else if (currentTab === 'cancelled') {
+                if (cancelledOrders.length === 0) {
+                    html = '<div class="no-order">📭 ຍັງບໍ່ມີອໍເດີ້ທີ່ຖືກຍົກເລີກ...</div>';
+                } else {
+                    let cardsHtml = cancelledOrders.map((order, index) => generateOrderCard(order, index + 1)).join('');
+                    html = `<div class="order-container">${cardsHtml}</div>`;
                 }
             }
 
             orderListArea.innerHTML = html;
         }
 
-        function generateOrderCard(order, index) {
+        function generateOrderCard(order, displaySeq) {
             let isCompleted = order.status === 'completed';
+            let isCancelled = order.status === 'cancelled';
             let isStore = (order.source === 'store') || (order.table && order.table.startsWith('AUG'));
             
             let badgeHtml = isStore 
-                ? `<span style="background-color: #1a365d; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: normal; white-space: nowrap;">🏪 ໜ້າຮ້ານ</span>`
-                : `<span style="background-color: #d97706; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: normal; white-space: nowrap;">📱 ອອນລາຍ</span>`;
+                ? `<span style="background-color: #1a365d; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">🏪 ໜ້າຮ້ານ</span>`
+                : `<span style="background-color: #d97706; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">📱 ອອນລາຍ</span>`;
 
-            let cleanOrderNo = order.table || '-';
+            let rawTable = order.table || '-';
+            let orderNo = rawTable;
+            let customerName = '';
+            let customerPhone = '';
+            let cleanPhoneForWa = '';
+
+            if (rawTable.includes(' - 📞 ')) {
+                let parts = rawTable.split(' - 📞 ');
+                customerPhone = parts[1];
+                cleanPhoneForWa = customerPhone.replace(/\D/g, ''); // ดึงเฉพาะตัวเลขสำหรับส่งลิงก์ WhatsApp
+                let leftPart = parts[0];
+                if (leftPart.includes('(') && leftPart.includes(')')) {
+                    let nameStart = leftPart.indexOf('(');
+                    let nameEnd = leftPart.indexOf(')');
+                    customerName = leftPart.substring(nameStart + 1, nameEnd);
+                    orderNo = leftPart.substring(0, nameStart).trim();
+                } else {
+                    orderNo = leftPart;
+                }
+            } else {
+                if (rawTable.includes('(') && rawTable.includes(')')) {
+                    let nameStart = rawTable.indexOf('(');
+                    let nameEnd = rawTable.indexOf(')');
+                    customerName = rawTable.substring(nameStart + 1, nameEnd);
+                    orderNo = rawTable.substring(0, nameStart).trim();
+                }
+            }
 
             let itemsHtml = '';
             if(order.items && order.items.length > 0) {
@@ -240,26 +281,64 @@
             }
             let totalPrice = Number(order.total || 0).toLocaleString();
 
+            // สร้างลิงก์คลิกเปิดแชท WhatsApp อัตโนมัติ
+            let phoneDisplayHtml = '';
+            if (customerPhone) {
+                let waChatUrl = `https://wa.me/${cleanPhoneForWa}?text=` + encodeURIComponent(`ສະບາຍດີครับ/ค่ะ ร้าน AUGUSTX HOME COFFEE ติดต่อสอบถามเกี่ยวกับออร์เดอร์เลขที่ ${orderNo}`);
+                phoneDisplayHtml = `<div style="font-size: 14px; font-weight: 500;"><a href="${waChatUrl}" target="_blank" class="phone-link" title="คลิกเพื่อแชท WhatsApp">📞 ໂທ: ${customerPhone}</a></div>`;
+            }
+
             return `
-                <div class="order-card ${isCompleted ? 'completed' : ''}">
+                <div class="order-card ${isCompleted ? 'completed' : ''} ${isCancelled ? 'cancelled' : ''}">
                     <div class="order-header">
-                        <div style="display: flex; flex-direction: column; gap: 6px;">
-                            <span style="font-size: 16px;">ເລກທີ: <span style="color: #1a365d;">${cleanOrderNo}</span></span>
-                            <div>${badgeHtml}</div>
+                        <div style="display: flex; flex-direction: column; gap: 5px; width: 75%;">
+                            <div style="font-size: 16px; font-weight: bold; color: #1a365d;">ເລກທີ: ${orderNo}</div>
+                            ${customerName ? `<div style="font-size: 15px; color: #334155; font-weight: 600;">👤 ຊື່: ${customerName}</div>` : ''}
+                            ${phoneDisplayHtml}
+                            <div style="margin-top: 2px;">${badgeHtml}</div>
+                            <div style="font-size: 15px; color: #475569; font-weight: bold; margin-top: 4px;">⏰ ເວລາສັ່ງ: ${order.time || '-'}</div>
+                        </div>
+                        <div class="right-header-actions">
+                            ${!isCancelled && !isCompleted ? `<button class="btn-cancel-x" title="ຍົກເລີກອໍເດີ້" onclick="confirmCancelOrder('${order.id}', '${orderNo}')">✕</button>` : ''}
+                            <span class="order-sequence-badge">#${displaySeq}</span>
                         </div>
                     </div>
-                    <p style="margin: 0 0 10px 0; font-size: 13px; color: #888;">ເວລາສັ່ງ: ${order.time || '-'}</p>
+                    
                     <ul class="order-items">
                         ${itemsHtml}
                     </ul>
                     <p style="font-size: 16px; margin-bottom: 0;"><strong>ຍອດລວມ:</strong> <span style="white-space: nowrap; color: #d97706;">${totalPrice} LAK</span></p>
                     
-                    ${!isCompleted 
-                        ? `<button class="btn-done" onclick="completeOrder('${order.id}')">✔ ພ້ອມເສີບ / ສຳເລັດແລ້ວ</button>` 
-                        : `<div style="text-align:center; color: #10b981; font-weight:bold; margin-top: 15px; padding: 10px; background: #e6f6ec; border-radius: 4px;">✅ ເສີບສຳເລັດແລ້ວ</div>`
+                    ${isCancelled 
+                        ? `<button class="btn-restore" onclick="restoreOrder('${order.id}')">🔄 กู้คืนออร์เดอร์นี้กลับมา</button>`
+                        : (!isCompleted 
+                            ? `<button class="btn-done" onclick="completeOrder('${order.id}')">✔ ພ້ອມເສີບ / ສຳເລັດແລ້ວ</button>` 
+                            : `<div style="text-align:center; color: #10b981; font-weight:bold; margin-top: 15px; padding: 10px; background: #e6f6ec; border-radius: 4px;">✅ ເສີບສຳເລັດແລ້ວ</div>`
+                        )
                     }
                 </div>
             `;
+        }
+
+        function confirmCancelOrder(orderId, orderNo) {
+            let firstCheck = confirm(`⚠ ທ່ານຕ້ອງການຍົກເລີກອໍເດີ້ "${orderNo}" ແທ້ ຫຼື ບໍ່?`);
+            if (firstCheck) {
+                let secondCheck = confirm(`🚨 ຢືນຢັນຄັ້ງສຸດທ້າຍ! ຕ້ອງການຍົກເລີກອໍເດີ້ວ່ານີ້ແທ້ໆ ບໍ?`);
+                if (secondCheck) {
+                    database.ref('orders/' + orderId).update({
+                        status: 'cancelled'
+                    });
+                }
+            }
+        }
+
+        function restoreOrder(orderId) {
+            let check = confirm(`🔄 ຕ້ອງການກູ້ຄືນອໍເດີ້ວ່ານີ້ກັບຄືນມາກຳລັງເຮັດແມ່ນບໍ?`);
+            if (check) {
+                database.ref('orders/' + orderId).update({
+                    status: 'pending'
+                });
+            }
         }
 
         function completeOrder(orderId) {
