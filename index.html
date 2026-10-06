@@ -69,10 +69,24 @@
         .preview-item-note { font-size: 0.8rem; color: #777; margin-left: 18px; font-style: italic;}
         .preview-total-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem; margin: 15px 0; }
         .preview-warning { text-align: center; font-size: 0.8rem; color: #d9534f; margin-top: 8px; font-weight: bold; line-height: 1.3; }
-        .modal-actions { display: flex; gap: 10px; }
+        
+        .modal-actions { display: flex; flex-direction: column; gap: 8px; }
+        .action-row { display: flex; gap: 8px; width: 100%; }
         .btn-back { flex: 1; padding: 12px; border: 1px solid #ccc; background: white; border-radius: 6px; cursor: pointer; font-weight: bold; color: #333; }
-        .btn-confirm { flex: 2; padding: 12px; border: none; background: #25D366; color: white; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-print { flex: 1; padding: 12px; border: none; background: #475569; color: white; border-radius: 6px; cursor: pointer; font-weight: bold; display: none; } /* ซ่อนไว้เป็นค่าเริ่มต้นสำหรับลูกค้า */
+        .btn-print:hover { background: #334155; }
+        .btn-confirm { width: 100%; padding: 12px; border: none; background: #25D366; color: white; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-confirm:hover { background: #128C7E; }
+
+        /* จัดการหน้ากระดาษเวลาสั่งพิมพ์ (Print CSS) */
+        @media print {
+            body * { visibility: hidden; }
+            #receipt-slip-preview, #receipt-slip-preview * { visibility: visible; }
+            #receipt-slip-preview { position: absolute; left: 0; top: 0; width: 100%; border: none; box-shadow: none; padding: 0; margin: 0; }
+            .customer-name-input, .phone-group, .foreign-phone-check { display: none !important; }
+            #print-customer-display { display: block !important; font-size: 0.9rem; font-weight: bold; text-align: center; margin-bottom: 5px; }
+        }
+        #print-customer-display { display: none; }
     </style>
 </head>
 <body>
@@ -263,14 +277,15 @@
 
     <div id="receipt-modal" class="modal-overlay">
         <div class="receipt-wrapper">
-            <div class="receipt-slip-preview">
+            <div id="receipt-slip-preview" class="receipt-slip-preview">
                 <div class="preview-brand">AUGUSTX</div>
                 <div class="preview-sub">HOME COFFEE</div>
                 <div class="preview-date" id="preview-date"></div>
                 <div class="preview-order-num" id="preview-order-num"></div>
+                <div id="print-customer-display"></div>
                 
                 <div class="preview-customer-box">
-                    <input type="text" id="customer-name-input" class="customer-name-input" placeholder="+ ເພີ່ມຊື່ (ຖ້າມີ)">
+                    <input type="text" id="customer-name-input" class="customer-name-input" placeholder="+ ເພີ່ມຊື່ (ຖ້າມີ)" oninput="updatePrintCustomer(this.value)">
                     
                     <div class="phone-group">
                         <span id="phone-prefix" class="phone-prefix">+856 20</span>
@@ -294,7 +309,10 @@
                 </div>
             </div>
             <div class="modal-actions">
-                <button class="btn-back" onclick="closeReceiptPreview()">ແກ້ໄຂ</button>
+                <div class="action-row" id="action-row-container">
+                    <button class="btn-back" onclick="closeReceiptPreview()">ແກ້ໄຂ</button>
+                    <button class="btn-print" id="print-btn-element" onclick="window.print()">🖨️ ພິມບິນ</button>
+                </div>
                 <button class="btn-confirm" id="confirm-btn" onclick="confirmWhatsApp()">ສົ່ງເຂົ້າ WhatsApp</button>
             </div>
         </div>
@@ -450,6 +468,15 @@
             phoneInput.value = "";
         }
 
+        function updatePrintCustomer(nameVal) {
+            let displayDiv = document.getElementById('print-customer-display');
+            if(nameVal.trim() !== "") {
+                displayDiv.innerText = "ຊື່ລູກຄ້າ: " + nameVal.trim();
+            } else {
+                displayDiv.innerText = "";
+            }
+        }
+
         function showReceiptPreview() {
             if (cart.length === 0) { alert('ກະລຸນາເລືອກສິນຄ້າກ່ອນ!'); return; }
             
@@ -465,6 +492,7 @@
             
             document.getElementById('preview-order-num').innerText = "Order No: " + currentOrderNumberStr;
             document.getElementById('customer-name-input').value = ""; 
+            document.getElementById('print-customer-display').innerText = "";
             document.getElementById('customer-phone-input').value = "";
             document.getElementById('foreign-phone-toggle').checked = false;
             togglePhoneMode();
@@ -494,7 +522,6 @@
             const isCashierMode = new URLSearchParams(window.location.search).get('mode') === 'cashier';
             let phoneVal = document.getElementById('customer-phone-input').value.trim();
 
-            // ถ้าไม่ใช่ Cashier Mode (ลูกค้าสั่งเองออนไลน์) บังคับต้องใส่เบอร์
             if (!isCashierMode && phoneVal === "") {
                 alert("⚠ ກະລຸນາໃສ່ເບີ WhatsApp ກ່ອນຈຶ່ງສາມາດສັ່ງຊື້ໄດ້!");
                 document.getElementById('customer-phone-input').focus();
@@ -574,6 +601,9 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             const isCashierMode = new URLSearchParams(window.location.search).get('mode') === 'cashier';
+            let printBtn = document.getElementById('print-btn-element');
+            let actionRow = document.getElementById('action-row-container');
+
             if(isCashierMode) {
                 let confirmBtn = document.getElementById('confirm-btn');
                 if(confirmBtn) {
@@ -586,6 +616,14 @@
                     warningText.style.color = '#1a365d';
                     warningText.innerHTML = '✅ Cashier Mode: ບັນທຶກອໍເດີ້ລົງລະບົບທັນທີ (ບໍ່บังคับเบอร์)';
                 }
+
+                // แสดงปุ่มพิมพ์บิลเฉพาะใน Cashier Mode เท่านั้น
+                if(printBtn) printBtn.style.display = 'block';
+            } else {
+                // ซ่อนปุ่มพิมพ์บิลสำหรับลูกค้าทั่วไป
+                if(printBtn) printBtn.style.display = 'none';
+                let btnBack = actionRow.querySelector('.btn-back');
+                if(btnBack) btnBack.style.flex = '1';
             }
         });
     </script>

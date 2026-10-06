@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AUGUSTX - Admin Dashboard</title>
+    <!-- เพิ่ม Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8; margin: 0; padding: 0; color: #333; }
+        header { background-color: #1a365d; color: white; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        header h1 { margin: 0; font-size: 1.8rem; letter-spacing: 1px; }
+        .back-link { background: #e2e8f0; color: #1a365d; padding: 8px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px; transition: 0.3s; }
+        .back-link:hover { background: #cbd5e1; }
+        
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+        
+        /* สรุปสถิติ */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid #1a365d; }
+        .stat-card.green { border-left-color: #10b981; }
+        .stat-card.orange { border-left-color: #d97706; }
+        .stat-card.blue { border-left-color: #0284c7; }
+        .stat-title { font-size: 14px; color: #64748b; font-weight: bold; margin-bottom: 5px; }
+        .stat-value { font-size: 22px; font-weight: bold; color: #1a365d; }
+
+        /* ส่วนกล่องรายงาน */
+        .section-box { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        .section-title { font-size: 18px; font-weight: bold; color: #1a365d; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        
+        .filter-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .filter-controls select, .filter-controls input { padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; }
+        .btn-reset { background: #e2e8f0; color: #334155; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        .btn-reset:hover { background: #cbd5e1; }
+
+        .form-row { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-row input, .form-row select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-family: inherit; }
+        .form-row input[type="text"] { flex: 2; min-width: 200px; }
+        .form-row input[type="number"] { flex: 1; min-width: 120px; }
+        .btn-add { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-add:hover { background: #059669; }
+
+        /* ตารางแสดงผล */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        th { background-color: #f8fafc; color: #334155; font-weight: bold; }
+        .btn-del { background: #fee2e2; color: #ef4444; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-del:hover { background: #ef4444; color: white; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🛠 AUGUSTX - ລະບົບຫຼັງຮ້ານ (Admin Dashboard)</h1>
+        <a href="kitchen.html" class="back-link">⬅ ກັບຄືນໜ້າຈໍຄົວ</a>
+    </header>
+
+    <div class="container">
+        <!-- สรุปสถิติภาพรวมแยกช่องทาง -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-title">💰 ຍອດຂາຍລວມທັງໝົດ</div>
+                <div class="stat-value" id="total-sales">0 LAK</div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-title">🏪 ยอดຂາຍໜ້າຮ້ານ (Store)</div>
+                <div class="stat-value" id="store-sales">0 LAK</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-title">📱 ยอดຂາຍອອນລາຍ (Online)</div>
+                <div class="stat-value" id="online-sales">0 LAK</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-title">✅ ອໍເດີ້ທີ່ສຳເລັດແລ້ວ</div>
+                <div class="stat-value" id="completed-count">0 ລາຍການ</div>
+            </div>
+        </div>
+
+        <!-- รายงานสรุปยอดขาย (พร้อมปฏิทินเลือกวันที่) -->
+        <div class="section-box">
+            <div class="section-title">
+                <span>📊 ບົດລາຍງານສະຫຼຸບຍອດຂາຍ</span>
+                <div class="filter-controls">
+                    <select id="report-type" onchange="renderReport()">
+                        <option value="daily">ລາຍວັນ (Daily)</option>
+                        <option value="monthly">ລາຍເດືອນ (Monthly)</option>
+                        <option value="yearly">ລາຍປີ (Yearly)</option>
+                    </select>
+                    <span style="font-size: 13px; font-weight: bold; color: #64748b;">ເລືອກວັນທີ່:</span>
+                    <input type="date" id="filter-date" onchange="renderReport()">
+                    <button class="btn-reset" onclick="resetDateFilter()">ລ້າງວັນທີ່</button>
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th id="th-period">ຊ່ວງເວລາ (ວັນທີ່ / ເດືອນ / ປີ)</th>
+                            <th>ຈຳນວນອໍເດີ້</th>
+                            <th>ຍອດໜ້າຮ້ານ (LAK)</th>
+                            <th>ຍອດອອນລາຍ (LAK)</th>
+                            <th>ຍອດຂາຍລວມ (LAK)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-table-body">
+                        <!-- ข้อมูลสรุปจะแสดงที่นี่ -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- จัดการเมนูสินค้า -->
+        <div class="section-box">
+            <div class="section-title">☕ ເພີ່ມ / ຈັດການເມນູເຄື່ອງດື່ມ</div>
+            <div class="form-row">
+                <input type="text" id="new-item-name" placeholder="ຊື່ເມນູ ເຊັ່ນ: 24. Matcha Latte">
+                <input type="number" id="new-item-price" placeholder="ລາຄາ (LAK)">
+                <select id="new-item-cat">
+                    <option value="BASIC COFFEE">BASIC COFFEE</option>
+                    <option value="BLACK SIGNATURE">BLACK SIGNATURE</option>
+                    <option value="ANOTHER COFFEE">ANOTHER COFFEE</option>
+                    <option value="GREEN SELECTION">GREEN SELECTION</option>
+                    <option value="NON-COFFEE">NON-COFFEE</option>
+                </select>
+                <button class="btn-add" onclick="addNewMenuItem()">➕ ເພີ່ມເມນູໃໝ່</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ໝວດໝູ່</th>
+                            <th>ຊື່ເມນູ</th>
+                            <th>ລາຄາ (LAK)</th>
+                            <th>ຈັດການ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="menu-table-body">
+                        <!-- รายการเมนูจะถูกโหลดมาแสดงที่นี่ -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ประวัติออร์เดอร์ทั้งหมด -->
+        <div class="section-box">
+            <div class="section-title">📋 ປະຫວັດອໍເດີ້ໃນລະບົບທັງໝົດ</div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ວັນທີ່ / ເວລາ</th>
+                            <th>ເລກທີອໍເດີ້</th>
+                            <th>ຊ່ອງທາງ</th>
+                            <th>ລູກຄ້າ / ເບີໂທ</th>
+                            <th>ຍອດລວມ</th>
+                            <th>ສະຖານະ</th>
+                            <th>ຈັດການ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="all-orders-table-body">
+                        <!-- ข้อมูลออร์เดอร์จะถูกโหลดมาแสดงที่นี่ -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // กำหนดรหัสผ่าน 2 ชุดที่สามารถเข้าใช้งานได้ (5588 หรือ 0909)
+        const ADMIN_PASSWORDS = ["5588", "0909"]; 
+
+        // ระบบตรวจสอบรหัสผ่านทันทีที่เปิดหน้าเว็บ
+        function checkAdminAuth() {
+            let passwordPrompt = prompt("🔐 ກະລຸນາໃສ່ລະຫັດຜ່ານເພື່ອເຂົ້າສູ່ລະບົບຫຼັງຮ້ານ:");
+            if (!ADMIN_PASSWORDS.includes(passwordPrompt)) {
+                alert("❌ ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ!");
+                window.location.href = "kitchen.html"; // ดีดกลับไปหน้าครัวถ้าใส่ผิด
+            }
+        }
+        checkAdminAuth(); // เรียกใช้งานตรวจสอบทันที
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDAJUEFUwkieMGFxRIZ6vRwzLbXF31c_BM",
+            authDomain: "augx-d75c2.firebaseapp.com",
+            databaseURL: "https://augx-d75c2-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "augx-d75c2",
+            storageBucket: "augx-d75c2.firebasestorage.app",
+            messagingSenderId: "246689770554",
+            appId: "1:246689770554:web:9a7e24546ee36c2bf2d903"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let globalOrders = [];
+
+        // โหลดข้อมูลออร์เดอร์มาประมวลผลทั้งหมด
+        database.ref('orders').on('value', (snapshot) => {
+            globalOrders = [];
+            let totalSales = 0;
+            let storeSales = 0;
+            let onlineSales = 0;
+            let completedCount = 0;
+            let ordersHtml = '';
+
+            snapshot.forEach((childSnapshot) => {
+                let order = childSnapshot.val();
+                order.firebaseId = childSnapshot.key;
+                globalOrders.push(order);
+
+                let statusText = 'ກຳລັງດຳເນີນການ';
+                let statusColor = '#d97706';
+                let isStore = (order.source === 'store') || (order.table && order.table.startsWith('AUG'));
+                let channelBadge = isStore 
+                    ? `<span style="background: #1a365d; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">🏪 ໜ້າຮ້ານ</span>` 
+                    : `<span style="background: #d97706; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">📱 ອອນລາຍ</span>`;
+
+                if (order.status === 'completed') {
+                    completedCount++;
+                    let orderTotal = Number(order.total || 0);
+                    totalSales += orderTotal;
+                    if (isStore) {
+                        storeSales += orderTotal;
+                    } else {
+                        onlineSales += orderTotal;
+                    }
+                    statusText = 'ສຳເລັດແລ້ວ';
+                    statusColor = '#10b981';
+                } else if (order.status === 'cancelled') {
+                    statusText = 'ຖືກຍົກເລີກ';
+                    statusColor = '#ef4444';
+                }
+
+                ordersHtml += `
+                    <tr>
+                        <td>${order.date || '-'} ${order.time || ''}</td>
+                        <td><strong>${order.table || '-'}</strong></td>
+                        <td>${channelBadge}</td>
+                        <td>${order.table && order.table.includes(' - 📞 ') ? order.table.split(' - 📞 ')[1] : 'ໜ້າຮ້ານ'}</td>
+                        <td>${Number(order.total || 0).toLocaleString()} LAK</td>
+                        <td><span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></td>
+                        <td><button class="btn-del" onclick="deleteOrder('${order.firebaseId}')">ລົບ</button></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('total-sales').innerText = totalSales.toLocaleString() + ' LAK';
+            document.getElementById('store-sales').innerText = storeSales.toLocaleString() + ' LAK';
+            document.getElementById('online-sales').innerText = onlineSales.toLocaleString() + ' LAK';
+            document.getElementById('completed-count').innerText = completedCount + ' ລາຍການ';
+            document.getElementById('all-orders-table-body').innerHTML = ordersHtml || '<tr><td colspan="7" style="text-align:center; color:#888;">ຍັງບໍ່ມີຂໍ້ມູນອໍເດີ້</td></tr>';
+
+            renderReport();
+        });
+
+        function resetDateFilter() {
+            document.getElementById('filter-date').value = "";
+            renderReport();
+        }
+
+        function formatDateToDDMMYYYY(dateVal) {
+            if(!dateVal) return "";
+            let parts = dateVal.split('-'); 
+            if(parts.length !== 3) return "";
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function renderReport() {
+            let reportType = document.getElementById('report-type').value;
+            let selectedDateInput = document.getElementById('filter-date').value; 
+            let targetDateStr = formatDateToDDMMYYYY(selectedDateInput); 
+
+            let groupedData = {};
+
+            globalOrders.forEach(order => {
+                if (order.status !== 'completed') return; 
+
+                let dateStr = order.date || ''; 
+                if (!dateStr) return;
+
+                if (targetDateStr && dateStr !== targetDateStr) {
+                    return;
+                }
+
+                let parts = dateStr.split('/');
+                if (parts.length !== 3) return;
+
+                let day = parts[0];
+                let month = parts[1];
+                let year = parts[2];
+                if(year.length === 2) year = "20" + year;
+
+                let key = "";
+                if (reportType === 'daily') {
+                    key = `${day}/${month}/${year}`;
+                } else if (reportType === 'monthly') {
+                    key = `${month}/${year}`;
+                } else if (reportType === 'yearly') {
+                    key = `${year}`;
+                }
+
+                if (!groupedData[key]) {
+                    groupedData[key] = { count: 0, storeTotal: 0, onlineTotal: 0, grandTotal: 0 };
+                }
+
+                let isStore = (order.source === 'store') || (order.table && order.table.startsWith('AUG'));
+                let amount = Number(order.total || 0);
+
+                groupedData[key].count += 1;
+                if (isStore) {
+                    groupedData[key].storeTotal += amount;
+                } else {
+                    groupedData[key].onlineTotal += amount;
+                }
+                groupedData[key].grandTotal += amount;
+            });
+
+            let sortedKeys = Object.keys(groupedData).sort().reverse();
+            let html = '';
+
+            sortedKeys.forEach(key => {
+                let data = groupedData[key];
+                html += `
+                    <tr>
+                        <td><strong>${key}</strong></td>
+                        <td>${data.count} ລາຍການ</td>
+                        <td>${data.storeTotal.toLocaleString()} LAK</td>
+                        <td>${data.onlineTotal.toLocaleString()} LAK</td>
+                        <td><strong style="color: #1a365d;">${data.grandTotal.toLocaleString()} LAK</strong></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('report-table-body').innerHTML = html || '<tr><td colspan="5" style="text-align:center; color:#888;">ຍັງບໍ່ມີຂໍ້ມູນຍອດຂາຍຕາມວັນທີ່ເລືອກ</td></tr>';
+        }
+
+        function deleteOrder(orderId) {
+            if (confirm("ຕ້ອງການລົບອໍເດີ້ວ່ານີ້ອອກຈາກລະບົບແທ້ ຫຼື ບໍ່?")) {
+                database.ref('orders/' + orderId).remove();
+            }
+        }
+
+        function addNewMenuItem() {
+            let name = document.getElementById('new-item-name').value.trim();
+            let price = document.getElementById('new-item-price').value.trim();
+            let category = document.getElementById('new-item-cat').value;
+
+            if (name === "" || price === "") {
+                alert("ກະລຸນາໃສ່ຊື່ເມນູ ແລະ ລາຄາໃຫ້ຄົບຖ້ວນ!");
+                return;
+            }
+
+            database.ref('menu_items').push({
+                name: name,
+                price: parseInt(price),
+                category: category
+            }).then(() => {
+                alert("✅ ເພີ່ມເມນູສຳເລັດ!");
+                document.getElementById('new-item-name').value = "";
+                document.getElementById('new-item-price').value = "";
+            });
+        }
+
+        database.ref('menu_items').on('value', (snapshot) => {
+            let menuHtml = '';
+            snapshot.forEach((childSnapshot) => {
+                let item = childSnapshot.val();
+                let itemId = childSnapshot.key;
+                menuHtml += `
+                    <tr>
+                        <td>${item.category}</td>
+                        <td><strong>${item.name}</strong></td>
+                        <td>${Number(item.price).toLocaleString()} LAK</td>
+                        <td><button class="btn-del" onclick="deleteMenuItem('${itemId}')">ລົບ</button></td>
+                    </tr>
+                `;
+            });
+            document.getElementById('menu-table-body').innerHTML = menuHtml || '<tr><td colspan="4" style="text-align:center; color:#888;">ຍັງບໍ່ມີລາຍການເມນູ</td></tr>';
+        });
+
+        function deleteMenuItem(itemId) {
+            if (confirm("ຕ້ອງການລົບເມນູວ່ານີ້ແທ້ ຫຼື ບໍ່?")) {
+                database.ref('menu_items/' + itemId).remove();
+            }
+        }
+    </script>
+</body>
+</html>
