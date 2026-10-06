@@ -76,7 +76,7 @@
     </style>
 </head>
 <body>
-    <div class="cart-icon" onclick="toggleCart()">🛒 ตะກ່າ (<span id="cart-count">0</span>)</div>
+    <div class="cart-icon" onclick="toggleCart()">🛒 ຕະກ່າ (<span id="cart-count">0</span>)</div>
     <header><h1>AUGUSTX</h1><p>HOME COFFEE</p></header>
     <div class="container">
         <!-- BASIC COFFEE -->
@@ -399,7 +399,7 @@
                     </div>
                 `;
             });
-            document.getElementById('cart-items').innerHTML = html || '<p style="text-align:center; color:#888;">ກະຕ່າว่างເປົ່າ</p>';
+            document.getElementById('cart-items').innerHTML = html || '<p style="text-align:center; color:#888;">ກະຕ່າວ່າງເປົ່າ</p>';
             document.getElementById('total-price').innerText = total.toLocaleString();
             document.getElementById('cart-count').innerText = totalItems;
         }
@@ -453,12 +453,11 @@
         function showReceiptPreview() {
             if (cart.length === 0) { alert('ກະລຸນາເລືອກສິນຄ້າກ່ອນ!'); return; }
             
-            const isCashierMode = new URLSearchParams(window.location.search).get('mode') === 'cashier';
-            
             let d = new Date();
             let dateDisplay = d.toLocaleDateString('th-TH') + ' ' + d.toLocaleTimeString('th-TH').slice(0,5);
             document.getElementById('preview-date').innerText = dateDisplay;
             
+            const isCashierMode = new URLSearchParams(window.location.search).get('mode') === 'cashier';
             let orderData = generateOrderNumberData(isCashierMode);
             currentOrderNumberStr = orderData.orderNum;
             orderDateToSave = orderData.dateStr;
@@ -492,28 +491,34 @@
         }
 
         function confirmWhatsApp() {
+            const isCashierMode = new URLSearchParams(window.location.search).get('mode') === 'cashier';
             let phoneVal = document.getElementById('customer-phone-input').value.trim();
-            if (phoneVal === "") {
+
+            // ถ้าไม่ใช่ Cashier Mode (ลูกค้าสั่งเองออนไลน์) บังคับต้องใส่เบอร์
+            if (!isCashierMode && phoneVal === "") {
                 alert("⚠ ກະລຸນາໃສ່ເບີ WhatsApp ກ່ອນຈຶ່ງສາມາດສັ່ງຊື້ໄດ້!");
                 document.getElementById('customer-phone-input').focus();
                 return;
             }
 
-            let isForeign = document.getElementById('foreign-phone-toggle').checked;
-            let fullPhone = isForeign ? ("+" + phoneVal) : ("+85620" + phoneVal);
+            let fullPhone = "";
+            if (phoneVal !== "") {
+                let isForeign = document.getElementById('foreign-phone-toggle').checked;
+                fullPhone = isForeign ? ("+" + phoneVal) : ("+85620" + phoneVal);
+            } else {
+                fullPhone = "ບໍ່ໄດ້ລະບຸເບີ (ໜ້າຮ້ານ)";
+            }
 
             localStorage.setItem('augustx_order_date', orderDateToSave);
             localStorage.setItem('augustx_order_count', nextOrderCountToSave);
 
             let totalPriceStr = document.getElementById('preview-total').innerText.replace(' LAK', '').replace(/,/g, '');
-            const isCashierMode = new URLSearchParams(window.location.search).get('mode') === 'cashier';
-            
             let customName = document.getElementById('customer-name-input').value.trim();
             let displayTable = currentOrderNumberStr;
             let nameTag = customName !== "" ? ` (${customName})` : "";
             
             if (isCashierMode) {
-                displayTable += `${nameTag} [ໜ້າຮ້ານ] - 📞 ${fullPhone}`;
+                displayTable += `${nameTag} [ໜ້າຮ້ານ]` + (phoneVal !== "" ? ` - 📞 ${fullPhone}` : '');
             } else {
                 displayTable += `${nameTag} - 📞 ${fullPhone}`;
             }
@@ -579,7 +584,7 @@
                 let warningText = document.getElementById('warning-msg');
                 if(warningText) {
                     warningText.style.color = '#1a365d';
-                    warningText.innerHTML = '✅ Cashier Mode: บันทึกออร์เดอร์ลงระบบทันที';
+                    warningText.innerHTML = '✅ Cashier Mode: ບັນທຶກອໍເດີ້ລົງລະບົບທັນທີ (ບໍ່บังคับเบอร์)';
                 }
             }
         });
