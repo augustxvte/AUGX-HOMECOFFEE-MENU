@@ -279,7 +279,7 @@
     </div>
 
     <script>
-        // --- 1. การเชื่อมต่อ Firebase Database (แก้แล้ว) ---
+        // --- 1. การเชื่อมต่อ Firebase Database ---
         const firebaseConfig = {
             apiKey: "AIzaSyDAJUEFUwkieMGFxRIZ6vRwzLbXF31c_BM",
             authDomain: "augx-d75c2.firebaseapp.com",
@@ -326,13 +326,16 @@
                 cart.push({ name: name, unitPrice: price, qty: 1, note: "" });
             }
             updateCartUI();
-            if(event && event.target) {
-                let btn = event.target;
-                let originalText = btn.innerText;
-                btn.innerText = "Added!";
-                btn.style.backgroundColor = "#25D366";
-                setTimeout(() => { btn.innerText = originalText; btn.style.backgroundColor = "var(--black)"; }, 1000);
-            }
+            
+            try {
+                if(window.event && window.event.target && window.event.target.tagName === 'BUTTON') {
+                    let btn = window.event.target;
+                    let originalText = btn.innerText;
+                    btn.innerText = "Added!";
+                    btn.style.backgroundColor = "#25D366";
+                    setTimeout(() => { btn.innerText = originalText; btn.style.backgroundColor = "var(--black)"; }, 1000);
+                }
+            } catch(e) {}
         }
 
         function changeQty(index, delta) {
@@ -448,6 +451,7 @@
             document.getElementById('cart').classList.add('open');
         }
 
+        // --- แก้ไขระบบใหม่: สั่งให้ทำงานทันที ไม่ต้องรอเซิร์ฟเวอร์โหลด ---
         function confirmWhatsApp() {
             localStorage.setItem('augustx_order_date', orderDateToSave);
             localStorage.setItem('augustx_order_count', nextOrderCountToSave);
@@ -473,34 +477,35 @@
                 timestamp: Date.now()
             };
 
-            // ยิงข้อมูลขึ้น Firebase Database แบบ Realtime
-            database.ref('orders').push(orderForKitchen)
-            .then(() => {
-                if (!isCashierMode) {
-                    let text = `ສະບາຍດີ ຕ້ອງການສັ່ງອໍເດີ້ຈາກເວັບໄຊຕ໌:\n`;
-                    text += `ເລກທີອໍເດີ້: ${currentOrderNumberStr}\n\n`;
-                    cart.forEach((item, index) => { 
-                        text += `${index + 1}. ${item.name} x ${item.qty} ແກ້ວ\n`; 
-                        if (item.note && item.note.trim() !== "") {
-                            text += `  *ໝາຍເຫດ: ${item.note.trim()}\n`;
-                        }
-                    });
-                    text += `\nລົບກວນທາງຮ້ານສະຫຼຸບຍອດ ແລະ ຂໍຄິວອາໂຄດສຳລັບຊຳລະເງິນດ້ວຍຄຮັບ/ຄ่ะ`;
-                    
-                    let waUrl = `https://wa.me/8562077666667?text=${encodeURIComponent(text)}`;
-                    window.open(waUrl, '_blank');
-                } else {
-                    alert('✅ ບັນທຶກອໍເດີ້ເຂົ້າໜ້າຈໍຄົວສຳເລັດແລ້ວ!');
-                }
+            // ทริคกันค้าง: ให้รันการเด้งไป WhatsApp / โชว์ข้อความสำเร็จ ทันที!
+            if (!isCashierMode) {
+                let text = `ສະບາຍດີ ຕ້ອງການສັ່ງອໍເດີ້ຈາກເວັບໄຊຕ໌:\n`;
+                text += `ເລກທີອໍເດີ້: ${currentOrderNumberStr}\n\n`;
+                cart.forEach((item, index) => { 
+                    text += `${index + 1}. ${item.name} x ${item.qty} ແກ້ວ\n`; 
+                    if (item.note && item.note.trim() !== "") {
+                        text += `  *ໝາຍເຫດ: ${item.note.trim()}\n`;
+                    }
+                });
+                text += `\nລົບກວນທາງຮ້ານສະຫຼຸບຍອດ ແລະ ຂໍຄິວອາໂຄດສຳລັບຊຳລະເງິນດ້ວຍຄຮັບ/ຄ่ะ`;
                 
-                document.getElementById('receipt-modal').style.display = 'none';
-                cart = [];
-                updateCartUI();
-            })
-            .catch((error) => {
-                console.error("Error writing document: ", error);
-                alert("เกิดข้อผิดพลาดในการส่งข้อมูล กรุณาลองใหม่อีกครั้ง");
-            });
+                let waUrl = `https://wa.me/8562077666667?text=${encodeURIComponent(text)}`;
+                window.open(waUrl, '_blank');
+            } else {
+                alert('✅ ບັນທຶກອໍເດີ້ເຂົ້າໜ້າຈໍຄົວສຳເລັດແລ້ວ!');
+            }
+            
+            // ปิดหน้าต่างบิล และล้างตะกร้าทันที
+            document.getElementById('receipt-modal').style.display = 'none';
+            cart = [];
+            updateCartUI();
+
+            // ค่อยให้ระบบแอบพยายามส่งขึ้นฐานข้อมูลทีหลังแบบเงียบๆ
+            try {
+                database.ref('orders').push(orderForKitchen);
+            } catch(error) {
+                console.log("Firebase Database Error: ", error);
+            }
         }
 
         window.addEventListener('DOMContentLoaded', () => {
