@@ -279,7 +279,7 @@
     </div>
 
     <script>
-        // --- 1. การเชื่อมต่อ Firebase Database ---
+        // --- 1. การเชื่อมต่อ Firebase Database (แก้แล้ว) ---
         const firebaseConfig = {
             apiKey: "AIzaSyDAJUEFUwkieMGFxRIZ6vRwzLbXF31c_BM",
             authDomain: "augx-d75c2.firebaseapp.com",
@@ -473,7 +473,7 @@
                 timestamp: Date.now()
             };
 
-            // 2. ยิงข้อมูลขึ้น Firebase Database แบบ Realtime
+            // ยิงข้อมูลขึ้น Firebase Database แบบ Realtime
             database.ref('orders').push(orderForKitchen)
             .then(() => {
                 if (!isCashierMode) {
