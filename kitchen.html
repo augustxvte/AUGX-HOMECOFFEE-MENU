@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AUGUSTX - Order Tracking</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f8;
+            background-image: url('images/bgreview.jpg'); 
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        header { 
+            background-color: #1a365d; 
+            color: white; 
+            text-align: center; 
+            padding: 2rem 1rem; 
+            width: 100%; 
+            box-sizing: border-box; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        header h1 { margin: 0; font-size: 2.5rem; letter-spacing: 2px; font-weight: 900; }
+        header p { margin-top: 5px; font-size: 1.2rem; letter-spacing: 4px; margin-bottom: 0; }
+
+        .overlay {
+            background: rgba(255, 255, 255, 0.85); 
+            min-height: calc(100vh - 120px);
+            margin: 20px;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .top-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .create-btn {
+            background-color: #1a365d;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: 0.3s;
+        }
+        .create-btn:hover { background-color: #11233f; }
+
+        .sound-toggle-btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #e2e8f0;
+            color: #64748b;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: 0.3s;
+        }
+        .sound-toggle-btn.on { background-color: #10b981; color: white; }
+
+        .tracking-title {
+            text-align: center;
+            color: #1a365d; 
+            margin-bottom: 25px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .tab-btn {
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: #e2e8f0;
+            color: #64748b;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .tab-btn:hover { background-color: #cbd5e1; }
+        .tab-btn.active {
+            background-color: #1a365d; 
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .order-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .order-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 6px solid #d97706; 
+            display: flex;
+            flex-direction: column;
+        }
+        .order-card.completed {
+            border-left-color: #10b981; 
+            opacity: 0.85;
+            background: #f8fafc;
+        }
+        .order-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .order-items {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+            flex-grow: 1;
+        }
+        .order-items li {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+        .btn-done {
+            background-color: #10b981;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            font-size: 15px;
+            margin-top: 15px;
+        }
+        .btn-done:hover { background-color: #059669; }
+        .no-order {
+            text-align: center;
+            grid-column: 1 / -1;
+            color: #64748b;
+            font-size: 18px;
+            margin-top: 60px;
+        }
+        .clear-btn-disabled {
+            background: #cbd5e1;
+            color: #64748b;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .date-separator {
+            grid-column: 1 / -1; 
+            background: #e2e8f0; 
+            padding: 10px 15px; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            margin: 10px 0; 
+            color: #334155;
+            border-left: 4px solid #1a365d; 
+        }
+
+        /* สำหรับเปิดหน้าต่างแคชเชียร์ซ้อนในหน้าเดิม */
+        #posOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background-color: #fff;
+            flex-direction: column;
+        }
+        .pos-header {
+            background-color: #1a365d;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .pos-header h2 { margin: 0; font-size: 20px; letter-spacing: 1px; }
+        .pos-close-btn {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 15px;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .pos-close-btn:hover { background-color: #dc2626; }
+        #posFrame {
+            flex-grow: 1;
+            border: none;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- หน้าจอครัวหลัก -->
+    <div id="mainKitchenView">
+        <header>
+            <h1>AUGUSTX</h1>
+            <p>HOME COFFEE</p>
+        </header>
+
+        <div class="overlay">
+            <div class="top-controls">
+                <button class="create-btn" onclick="openPOS()">➕ ສ້າງອໍເດີ້ໜ້າຮ້ານ</button>
+                <button id="soundBtn" class="sound-toggle-btn" onclick="toggleSound()">🔇 ປິດສຽງແຈ້ງເຕືອນຢູ່</button>
+            </div>
+            <audio id="alertSound" src="alert.mp3" preload="auto"></audio>
+
+            <div class="tracking-title">☕ Order Tracking</div>
+            
+            <div class="tabs">
+                <button id="btn-active" class="tab-btn active" onclick="switchTab('active')">🔔 ອໍເດີ້ໃໝ່ (ກຳລັງເຮັດ)</button>
+                <button id="btn-history" class="tab-btn" onclick="switchTab('history')">🕒 ປະຫວັດອໍເດີ້ (ສຳເລັດແລ້ວ)</button>
+            </div>
+
+            <div id="orderListArea">
+            </div>
+        </div>
+    </div>
+
+    <!-- หน้าต่างจำลองสำหรับสร้างออร์เดอร์หน้าร้าน (Cashier Mode) -->
+    <div id="posOverlay">
+        <div class="pos-header">
+            <h2>📝 ສ້າງອໍເດີ້ໜ້າຮ້ານ (Cashier Mode)</h2>
+            <button class="pos-close-btn" onclick="closePOS()">
+                <span>⬅ ກັບຄືນໜ້າຕິດຕາມອໍເດີ້</span>
+            </button>
+        </div>
+        <iframe id="posFrame" src=""></iframe>
+    </div>
+
+    <script>
+        let currentTab = 'active';
+        let soundEnabled = false;
+        let lastPendingCount = 0;
+        let lastAlertTime = Date.now();
+
+        // เปิด-ปิด หน้าจอแคชเชียร์
+        function openPOS() {
+            document.getElementById('posFrame').src = 'index.html?mode=cashier';
+            document.getElementById('posOverlay').style.display = 'flex';
+        }
+
+        function closePOS() {
+            document.getElementById('posOverlay').style.display = 'none';
+            document.getElementById('posFrame').src = ''; 
+            loadOrders(); // โหลดออร์เดอร์ใหม่เผื่อเพิ่งกดสั่งเข้ามา
+        }
+
+        // ระบบเสียง
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            let btn = document.getElementById('soundBtn');
+            let audio = document.getElementById('alertSound');
+
+            if (soundEnabled) {
+                btn.innerHTML = '🔊 ເປີດສຽງແຈ້ງເຕືອນແລ້ວ';
+                btn.classList.add('on');
+                audio.play().catch(e => console.log("รอผู้ใช้คลิกก่อน"));
+                setTimeout(() => { audio.pause(); audio.currentTime = 0; }, 200);
+            } else {
+                btn.innerHTML = '🔇 ປິດສຽງແຈ້ງເຕືອນຢູ່';
+                btn.classList.remove('on');
+            }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('btn-active').className = tab === 'active' ? 'tab-btn active' : 'tab-btn';
+            document.getElementById('btn-history').className = tab === 'history' ? 'tab-btn active' : 'tab-btn';
+            loadOrders();
+        }
+
+        // โหลดข้อมูลออร์เดอร์
+        function loadOrders() {
+            const orderListArea = document.getElementById('orderListArea');
+            let allOrders = JSON.parse(localStorage.getItem('customerOrders')) || [];
+            
+            let todayStr = new Date().toLocaleDateString('en-GB'); 
+            let dataChanged = false;
+            allOrders.forEach(o => {
+                if(!o.date) { o.date = todayStr; dataChanged = true; }
+            });
+            if(dataChanged) { localStorage.setItem('customerOrders', JSON.stringify(allOrders)); }
+
+            let activeOrders = allOrders.map((o, i) => ({order: o, index: i})).filter(item => item.order.status !== 'completed');
+            let completedOrders = allOrders.map((o, i) => ({order: o, index: i})).filter(item => item.order.status === 'completed');
+            
+            let currentPendingCount = activeOrders.length;
+
+            if (soundEnabled) {
+                if (currentPendingCount > lastPendingCount) {
+                    document.getElementById('alertSound').play().catch(e => console.log(e));
+                    lastAlertTime = Date.now();
+                } else if (currentPendingCount > 0) {
+                    if (Date.now() - lastAlertTime >= 300000) { 
+                        document.getElementById('alertSound').play().catch(e => console.log(e));
+                        lastAlertTime = Date.now();
+                    }
+                }
+            }
+            lastPendingCount = currentPendingCount;
+
+            let html = '';
+
+            if (currentTab === 'active') {
+                if (activeOrders.length === 0) {
+                    html = '<div class="no-order">😴 ຍັງບໍ່ມີອໍເດີ້ໃໝ່ໃນຂະນະນີ້...</div>';
+                } else {
+                    let cardsHtml = activeOrders.map(item => generateOrderCard(item.order, item.index)).join('');
+                    html = `<div class="order-container">${cardsHtml}</div>`;
+                }
+            } else {
+                html += `
+                    <div style="text-align: right; margin-bottom: 15px;">
+                        <button class="clear-btn-disabled" disabled>🔒 ລະບົບແບ່ງເກັບປະຫວັດເປັນລາຍວັນອັດຕະໂນມັດ</button>
+                    </div>
+                `;
+
+                if (completedOrders.length === 0) {
+                    html += '<div class="no-order">📭 ຍັງບໍ່ມີປະຫວັດອໍເດີ້ທີ່ເຮັດສຳເລັດແລ້ວ...</div>';
+                } else {
+                    let groups = {};
+                    completedOrders.forEach(item => {
+                        let d = item.order.date || todayStr;
+                        if(!groups[d]) groups[d] = [];
+                        groups[d].push(item);
+                    });
+
+                    let sortedDates = Object.keys(groups).sort((a,b) => {
+                        let pa = a.split('/').reverse().join('');
+                        let pb = b.split('/').reverse().join('');
+                        return pb.localeCompare(pa);
+                    });
+
+                    html += `<div class="order-container">`;
+                    sortedDates.forEach(date => {
+                        html += `<div class="date-separator">📅 ວັນທີ: ${date}</div>`;
+                        let cardsHtml = groups[date].map(item => generateOrderCard(item.order, item.index)).join('');
+                        html += cardsHtml;
+                    });
+                    html += `</div>`;
+                }
+            }
+
+            orderListArea.innerHTML = html;
+        }
+
+        // สร้างการ์ดแสดงออร์เดอร์
+        function generateOrderCard(order, originalIndex) {
+            let isCompleted = order.status === 'completed';
+            
+            // เช็คเงื่อนไขว่าเป็นหน้าร้าน: มี source เป็น store หรือรหัสขึ้นต้นด้วย AUG
+            let isStore = (order.source === 'store') || (order.table && order.table.startsWith('AUG'));
+            
+            let badgeHtml = isStore 
+                ? `<span style="background-color: #1a365d; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: normal; white-space: nowrap;">🏪 ໜ້າຮ້ານ</span>`
+                : `<span style="background-color: #d97706; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: normal; white-space: nowrap;">📱 ອອນລາຍ</span>`;
+
+            let cleanOrderNo = order.table || '-';
+
+            let itemsHtml = '';
+            if(order.items && order.items.length > 0) {
+                order.items.forEach(item => {
+                    let itemPrice = Number(item.price * item.quantity || 0).toLocaleString();
+                    itemsHtml += `
+                        <li>
+                            <span style="padding-right: 15px;">${item.name} (x${item.quantity})</span> 
+                            <span style="white-space: nowrap; font-weight: 500;">${itemPrice} LAK</span>
+                        </li>
+                    `;
+                });
+            }
+            let totalPrice = Number(order.total || 0).toLocaleString();
+
+            return `
+                <div class="order-card ${isCompleted ? 'completed' : ''}">
+                    <div class="order-header">
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <span style="font-size: 16px;">ເລກທີ: <span style="color: #1a365d;">${cleanOrderNo}</span></span>
+                            <div>${badgeHtml}</div>
+                        </div>
+                        <span style="font-size: 14px; color: #666;">#${originalIndex + 1}</span>
+                    </div>
+                    <p style="margin: 0 0 10px 0; font-size: 13px; color: #888;">ເວລາສັ່ງ: ${order.time || '-'}</p>
+                    <ul class="order-items">
+                        ${itemsHtml}
+                    </ul>
+                    <p style="font-size: 16px; margin-bottom: 0;"><strong>ຍອດລວມ:</strong> <span style="white-space: nowrap; color: #d97706;">${totalPrice} LAK</span></p>
+                    
+                    ${!isCompleted 
+                        ? `<button class="btn-done" onclick="completeOrder(${originalIndex})">✔ ພ້ອມເສີບ / ສຳເລັດແລ້ວ</button>` 
+                        : `<div style="text-align:center; color: #10b981; font-weight:bold; margin-top: 15px; padding: 10px; background: #e6f6ec; border-radius: 4px;">✅ ເສີບສຳເລັດແລ້ວ</div>`
+                    }
+                </div>
+            `;
+        }
+
+        function completeOrder(index) {
+            let orders = JSON.parse(localStorage.getItem('customerOrders')) || [];
+            if(orders[index]) {
+                orders[index].status = 'completed';
+                localStorage.setItem('customerOrders', JSON.stringify(orders));
+                lastPendingCount = Math.max(0, lastPendingCount - 1); 
+                loadOrders();
+            }
+        }
+
+        loadOrders();
+        setInterval(loadOrders, 3000);
+    </script>
+</body>
+</html>
