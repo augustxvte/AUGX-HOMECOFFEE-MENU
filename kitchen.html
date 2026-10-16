@@ -3,351 +3,326 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AUGUSTX - Order Tracking</title>
-    <!-- เพิ่ม Firebase SDK -->
+    <title>AUGUSTX - Kitchen Display</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8; background-image: url('images/bgreview.jpg'); background-size: cover; background-attachment: fixed; background-position: center; margin: 0; padding: 0; color: #333; }
-        header { background-color: #1a365d; color: white; text-align: center; padding: 2rem 1rem; width: 100%; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        header h1 { margin: 0; font-size: 2.5rem; letter-spacing: 2px; font-weight: 900; }
-        header p { margin-top: 5px; font-size: 1.2rem; letter-spacing: 4px; margin-bottom: 0; }
-        .overlay { background: rgba(255, 255, 255, 0.85); min-height: calc(100vh - 120px); margin: 20px; padding: 20px; border-radius: 10px; }
-        .top-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .create-btn { background-color: #1a365d; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 15px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: 0.3s; }
-        .create-btn:hover { background-color: #11233f; }
-        .sound-toggle-btn { padding: 10px 15px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; background-color: #e2e8f0; color: #64748b; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: 0.3s; }
-        .sound-toggle-btn.on { background-color: #10b981; color: white; }
-        .tracking-title { text-align: center; color: #1a365d; margin-bottom: 25px; font-size: 24px; font-weight: bold; }
-        
-        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
-        .tab-btn { padding: 12px 20px; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; background-color: #e2e8f0; color: #64748b; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .tab-btn:hover { background-color: #cbd5e1; }
-        .tab-btn.active { background-color: #1a365d; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        
-        .order-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .order-card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-left: 6px solid #d97706; display: flex; flex-direction: column; position: relative; }
-        .order-card.completed { border-left-color: #10b981; opacity: 0.85; background: #f8fafc; }
-        .order-card.cancelled { border-left-color: #ef4444; opacity: 0.8; background: #fef2f2; }
-        
-        .order-header { font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #eee; padding-bottom: 12px; }
-        
-        .right-header-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-        .btn-cancel-x { background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; width: 28px; height: 28px; border-radius: 50%; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: 0.2s; }
-        .btn-cancel-x:hover { background: #ef4444; color: white; }
-        
-        .order-sequence-badge { font-size: 13px; font-weight: bold; background: #e2e8f0; color: #1a365d; padding: 2px 8px; border-radius: 6px; }
 
-        /* สไตล์ลิงก์เบอร์โทรให้กดคลิกได้ง่ายและสวยงาม */
-        .phone-link { color: #0284c7; font-weight: 500; text-decoration: none; transition: 0.2s; display: inline-block; }
-        .phone-link:hover { color: #0369a1; text-decoration: underline; }
+        :root { --blue: #1a365d; --green: #689f38; --red: #ef4444; --orange: #f59e0b; --bg: #f4f6f8; --white: #ffffff; --text: #334155; --border: #e0e0e0; }
+        * { font-family: 'Noto Sans Lao', sans-serif, 'Segoe UI', Tahoma; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html { height: 100%; }
+        body { background-color: var(--bg); margin: 0; padding: 0; color: var(--text); height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; touch-action: manipulation; }
 
-        .order-items { list-style: none; padding: 0; margin: 10px 0; border-bottom: 1px solid #eee; padding-bottom: 10px; flex-grow: 1; }
-        .order-items li { margin-bottom: 8px; display: flex; justify-content: space-between; font-size: 14px; }
-        .btn-done { background-color: #10b981; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; }
-        .btn-done:hover { background-color: #059669; }
-        .btn-restore { background-color: #3b82f6; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 15px; }
-        .btn-restore:hover { background-color: #2563eb; }
-
-        .no-order { text-align: center; grid-column: 1 / -1; color: #64748b; font-size: 18px; margin-top: 60px; }
-        .clear-btn-disabled { background: #cbd5e1; color: #64748b; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: not-allowed; opacity: 0.7; }
-        .date-separator { grid-column: 1 / -1; background: #e2e8f0; padding: 10px 15px; border-radius: 8px; font-weight: bold; margin: 10px 0; color: #334155; border-left: 4px solid #1a365d; }
+        .kitchen-container { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 20px; }
         
-        #posOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background-color: #fff; flex-direction: column; }
-        .pos-header { background-color: #1a365d; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .pos-header h2 { margin: 0; font-size: 20px; letter-spacing: 1px; }
-        .pos-close-btn { background-color: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.3s; display: flex; align-items: center; gap: 8px; }
-        .pos-close-btn:hover { background-color: #dc2626; }
-        #posFrame { flex-grow: 1; border: none; width: 100%; }
+        .kitchen-header { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+        .kitchen-header h1 { margin: 0; color: var(--blue); font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
+        
+        .top-controls { display: flex; align-items: center; gap: 10px; }
+        .top-btn { background: var(--blue); color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13.5px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+        /* Queue Alert Banner (แจ้งเตือนออร์เดอร์ที่รอคิวทั้งหมดถ้าเกิน 6) */
+        .queue-alert-banner { display: none; background: #fff7ed; border: 1px solid #ffedd5; color: #c2410c; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 12px; align-items: center; justify-content: space-between; flex-shrink: 0; }
+        .queue-alert-banner.active { display: flex; }
+
+        /* Navigation & Filter Bar */
+        .kitchen-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-shrink: 0; flex-wrap: wrap; gap: 10px; }
+        .kitchen-tabs { display: flex; gap: 10px; }
+        .tab-btn { padding: 9px 20px; background: var(--white); border: 1px solid var(--border); border-radius: 8px; font-weight: bold; font-size: 14px; color: var(--blue); cursor: pointer; transition: 0.2s; }
+        .tab-btn.active { background: var(--blue); color: var(--white); border-color: var(--blue); }
+        
+        .date-filter-box { display: none; align-items: center; gap: 8px; font-weight: bold; font-size: 14px; }
+        .date-filter-box.active { display: flex; }
+        .date-filter-box input { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: white; }
+
+        /* Order Cards Grid */
+        .orders-grid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; align-content: start; padding-bottom: 20px; -webkit-overflow-scrolling: touch; }
+        
+        .order-card { background: var(--white); border-radius: 12px; border-top: 8px solid var(--orange); box-shadow: 0 4px 10px rgba(0,0,0,0.06); display: flex; flex-direction: column; overflow: hidden; transition: 0.3s; }
+        .order-card.cooking { border-top-color: var(--blue); background: #fefce8; }
+        .order-card.completed { border-top-color: var(--green); opacity: 0.75; }
+
+        .order-card-header { padding: 14px 18px; background: #f8fafc; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .order-table-badge { font-weight: bold; font-size: 1.2rem; color: var(--blue); }
+        .order-time { font-size: 13px; color: #64748b; font-weight: bold; }
+
+        .order-card-body { padding: 18px; flex: 1; overflow-y: auto; max-height: 250px; -webkit-overflow-scrolling: touch; }
+        .order-item-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border-bottom: 1px dotted #e2e8f0; font-size: 15px; }
+        .order-item-row:last-child { border-bottom: none; }
+        .item-name-qty { font-weight: bold; color: var(--text); }
+        .item-note { font-size: 13px; color: var(--red); margin-top: 3px; font-weight: bold; }
+
+        .order-card-footer { padding: 14px 18px; background: #f8fafc; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .order-source-badge { font-size: 13px; font-weight: bold; padding: 5px 10px; border-radius: 6px; background: #e0f2fe; color: #0369a1; }
+        
+        .action-btn { padding: 10px 18px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; color: white; background: var(--orange); text-transform: uppercase; }
+        .action-btn.cooking { background: var(--blue); }
+        .action-btn.completed { background: var(--green); }
+    
+
+        /* ---------- เพิ่มใหม่ ---------- */
+        .sound-banner { display: none; background: #fef9c3; border: 1px solid #fde047; color: #854d0e; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 14px; margin-bottom: 12px; flex-shrink: 0; cursor: pointer; }
+        .sound-banner.active { display: block; }
+        .order-no { font-size: 13px; color: #64748b; font-weight: bold; margin-left: 8px; }
+        .wait-badge { display: inline-block; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; margin-left: 8px; }
+        .wait-badge.warn { background: #ffedd5; color: #c2410c; }
+        .wait-badge.late { background: #fee2e2; color: #b91c1c; }
+        .kind-badge { display: inline-block; font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; margin-left: 8px; }
+        .kind-badge.add { background: #fef3c7; color: #92400e; }
+        .kind-badge.cancel { background: #ef4444; color: #fff; }
+        .order-card.cancel { border-color: #ef4444 !important; background: #fef2f2; box-shadow: 0 0 0 3px rgba(239,68,68,.25); }
+        .order-card.cancel .item-name-qty { color: #b91c1c; text-decoration: line-through; }
+        .cancel-note { color: #b91c1c; font-weight: bold; font-size: 13px; margin-bottom: 6px; }
+        .unpaid-badge { font-size: 12px; font-weight: bold; padding: 3px 8px; border-radius: 6px; background: #fee2e2; color: #b91c1c; margin-left: 6px; }
+        .footer-btns { display: flex; gap: 6px; align-items: center; }
+        .undo-btn { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; font-weight: bold; cursor: pointer; color: #64748b; }
     </style>
+    <link rel="manifest" href="kitchen.webmanifest">
+    <meta name="theme-color" content="#b45309">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="icon-kitchen-192.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,500,1,0&display=block">
+    <link rel="stylesheet" href="theme7.css">
 </head>
 <body>
-
-    <div id="mainKitchenView">
-        <header>
-            <h1>AUGUSTX</h1>
-            <p>HOME COFFEE</p>
-        </header>
-
-        <div class="overlay">
+    <div class="kitchen-container">
+        <div class="kitchen-header">
+            <h1>👨‍🍳 หน้าจอห้องครัว (Kitchen Display)</h1>
             <div class="top-controls">
-                <button class="create-btn" onclick="openPOS()">➕ ສ້າງອໍເດີ້ໜ້າຮ້ານ</button>
-                <button id="soundBtn" class="sound-toggle-btn on" onclick="toggleSound()">🔊 ເປີດສຽງແຈ້ງເຕືອນແລ້ວ</button>
+                <a href="index.html" class="top-btn">🛒 ไปหน้า Cashier</a>
+                <a href="admin.html" class="top-btn" style="background:var(--blue);">⚙️ ไปหน้า Admin</a>
             </div>
-            <audio id="alertSound" src="alert.mp3" preload="auto"></audio>
+        </div>
 
-            <div class="tracking-title">☕ Order Tracking (Realtime)</div>
-            
-            <div class="tabs">
-                <button id="btn-active" class="tab-btn active" onclick="switchTab('active')">🔔 ອໍເດີ້ໃໝ່ (ກຳລັງເຮັດ)</button>
-                <button id="btn-history" class="tab-btn" onclick="switchTab('history')">🕒 ປະຫວັດ (ສຳເລັດແລ້ວ)</button>
-                <button id="btn-cancelled" class="tab-btn" onclick="switchTab('cancelled')">🚫 ອໍເດີ້ທີ່ຖືກຍົກເລີກ</button>
-            </div>
+        <div class="sound-banner" id="sound-banner" onclick="unlockAudio()">🔔 แตะที่นี่ 1 ครั้งเพื่อเปิดเสียงแจ้งเตือนออร์เดอร์ใหม่ (เบราว์เซอร์ต้องให้แตะก่อนจึงจะมีเสียง)</div>
 
-            <div id="orderListArea">
-                <div class="no-order">ກຳລັງໂຫຼດຂໍ້ມູນ...</div>
+        <div class="queue-alert-banner" id="queue-alert-banner">
+            <span>🔥 มีออร์เดอร์รอคิวทั้งหมด <strong id="total-pending-num">0</strong> รายการ (กำลังแสดง 6 คิวแรก)</span>
+            <span style="font-size: 12px; font-weight: normal;">ทำเสร็จแล้วจะเลื่อนขึ้นมาอัตโนมัติ</span>
+        </div>
+
+        <div class="kitchen-toolbar">
+            <div class="kitchen-tabs">
+                <button class="tab-btn active" id="tab-main-btn" onclick="switchTab('main')">📋 ออร์เดอร์ที่ต้องทำ (Main)</button>
+                <button class="tab-btn" id="tab-history-btn" onclick="switchTab('history')">📜 ประวัติย้อนหลัง (History)</button>
             </div>
+            <div class="date-filter-box" id="date-filter-container">
+                <label>📅 เลือกวันที่:</label>
+                <input type="date" id="history-date-input" onchange="loadHistory()">
+            </div>
+        </div>
+
+        <div class="orders-grid" id="kitchen-orders-container">
+            <div style="grid-column: 1/-1; text-align:center; color:#94a3b8; padding:80px; font-size:1.2rem;">กำลังโหลดออร์เดอร์...</div>
         </div>
     </div>
 
-    <div id="posOverlay">
-        <div class="pos-header">
-            <h2>📝 ສ້າງອໍເດີ້ໜ້າຮ້ານ (Cashier Mode)</h2>
-            <button class="pos-close-btn" onclick="closePOS()">
-                <span>⬅ ກັບຄືນໜ້າຕິດຕາມອໍເດີ້</span>
-            </button>
-        </div>
-        <iframe id="posFrame" src=""></iframe>
-    </div>
-
+    <script src="shared.js"></script>
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyDAJUEFUwkieMGFxRIZ6vRwzLbXF31c_BM",
-            authDomain: "augx-d75c2.firebaseapp.com",
-            databaseURL: "https://augx-d75c2-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "augx-d75c2",
-            storageBucket: "augx-d75c2.firebasestorage.app",
-            messagingSenderId: "246689770554",
-            appId: "1:246689770554:web:9a7e24546ee36c2bf2d903"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        const ACTIVE_DAYS = 7;          // แสดงออร์เดอร์ที่ค้างย้อนหลังกี่วัน
+        let currentTab = 'main';
+        let activeOrders = [];          // ออร์เดอร์ล่าสุด (ใช้หน้า Main)
+        let historyOrders = [];         // ออร์เดอร์ของวันที่เลือก (ใช้หน้า History)
+        let historyRef = null;
+        let knownIds = null;            // เก็บ id ที่เคยเห็นแล้ว เพื่อรู้ว่าอันไหนใหม่
+        let audioCtx = null, audioReady = false;
 
-        let currentTab = 'active';
-        let soundEnabled = true;
-        let lastPendingCount = 0;
-        let lastAlertTime = Date.now();
-        let allFirebaseOrders = [];
-        let isFirstLoad = true;
-
-        function openPOS() {
-            document.getElementById('posFrame').src = 'index.html?mode=cashier';
-            document.getElementById('posOverlay').style.display = 'flex';
+        /* ---------------- เสียง ---------------- */
+        function unlockAudio() {
+            try {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                if (AC && !audioCtx) audioCtx = new AC();
+                if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            } catch (e) { }
+            audioReady = true;
+            document.getElementById('sound-banner').classList.remove('active');
         }
-
-        function closePOS() {
-            document.getElementById('posOverlay').style.display = 'none';
-            document.getElementById('posFrame').src = ''; 
-        }
-
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            let btn = document.getElementById('soundBtn');
-            let audio = document.getElementById('alertSound');
-
-            if (soundEnabled) {
-                btn.innerHTML = '🔊 ເປີດສຽງແຈ້ງເຕືອນແລ້ວ';
-                btn.classList.add('on');
-                audio.play().catch(e => console.log("กำลังเปิดใช้งานเสียง"));
-                setTimeout(() => { audio.pause(); audio.currentTime = 0; }, 200);
-            } else {
-                btn.innerHTML = '🔇 ປິດສຽງແຈ້ງເຕືອນຢູ່';
-                btn.classList.remove('on');
+        function beep(times) {
+            if (!audioCtx) return;
+            for (let i = 0; i < times; i++) {
+                const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                o.type = 'sine'; o.frequency.value = 880;
+                g.gain.value = 0.25;
+                o.connect(g); g.connect(audioCtx.destination);
+                const t0 = audioCtx.currentTime + i * 0.35;
+                o.start(t0); o.stop(t0 + 0.2);
             }
         }
-
-        function switchTab(tab) {
-            currentTab = tab;
-            document.getElementById('btn-active').className = tab === 'active' ? 'tab-btn active' : 'tab-btn';
-            document.getElementById('btn-history').className = tab === 'history' ? 'tab-btn active' : 'tab-btn';
-            document.getElementById('btn-cancelled').className = tab === 'cancelled' ? 'tab-btn active' : 'tab-btn';
-            renderOrders();
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'en-US';
+                window.speechSynthesis.speak(u);
+            }
         }
+        function playNewOrderSound() { beep(2); speak('New order received'); }
+        function playCancelSound() { beep(4); speak('Order cancelled'); }
+        function playReminderSound() { beep(1); speak('Pending orders waiting'); }
 
-        database.ref('orders').on('value', (snapshot) => {
-            let tempOrders = [];
-            snapshot.forEach((childSnapshot) => {
-                let order = childSnapshot.val();
-                order.id = childSnapshot.key;
-                tempOrders.push(order);
-            });
-            allFirebaseOrders = tempOrders;
-            renderOrders();
-        });
+        /* ---------------- ช่วยทั่วไป ---------------- */
+        function isOpen(o) { return !o.status || o.status === 'pending' || o.status === 'cooking'; }
+        function openOrders() { return activeOrders.filter(isOpen).sort((a, b) => ((b.kind === 'cancel') - (a.kind === 'cancel')) || ((a.timestamp || 0) - (b.timestamp || 0))); }
 
-        function renderOrders() {
-            const orderListArea = document.getElementById('orderListArea');
-            let todayStr = new Date().toLocaleDateString('en-GB'); 
-
-            let activeOrders = allFirebaseOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled');
-            let completedOrders = allFirebaseOrders.filter(o => o.status === 'completed');
-            let cancelledOrders = allFirebaseOrders.filter(o => o.status === 'cancelled');
-            
-            let currentPendingCount = activeOrders.length;
-
-            if (soundEnabled && !isFirstLoad) {
-                if (currentPendingCount > lastPendingCount) {
-                    document.getElementById('alertSound').play().catch(e => console.log(e));
-                    lastAlertTime = Date.now();
-                } else if (currentPendingCount > 0) {
-                    if (Date.now() - lastAlertTime >= 300000) { 
-                        document.getElementById('alertSound').play().catch(e => console.log(e));
-                        lastAlertTime = Date.now();
-                    }
+        function switchTab(tabName) {
+            currentTab = tabName;
+            document.getElementById('tab-main-btn').className = 'tab-btn ' + (tabName === 'main' ? 'active' : '');
+            document.getElementById('tab-history-btn').className = 'tab-btn ' + (tabName === 'history' ? 'active' : '');
+            const filterBox = document.getElementById('date-filter-container');
+            if (tabName === 'history') {
+                filterBox.classList.add('active');
+                document.getElementById('queue-alert-banner').classList.remove('active');
+                if (!document.getElementById('history-date-input').value) {
+                    document.getElementById('history-date-input').value = dayKey(Date.now());
                 }
+                loadHistory();
+            } else {
+                filterBox.classList.remove('active');
+                if (historyRef) { historyRef.off(); historyRef = null; }
+                checkQueueAlertVisibility();
+                renderOrders();
             }
-            lastPendingCount = currentPendingCount;
-            isFirstLoad = false;
+        }
+
+        function checkQueueAlertVisibility() {
+            const total = openOrders().length;
+            const banner = document.getElementById('queue-alert-banner');
+            if (currentTab === 'main' && total > 6) {
+                document.getElementById('total-pending-num').innerText = total;
+                banner.classList.add('active');
+            } else banner.classList.remove('active');
+        }
+
+        /* ---------------- โหลดข้อมูล ---------------- */
+        function startListeners() {
+            if (!audioReady) document.getElementById('sound-banner').classList.add('active');
+            document.addEventListener('click', unlockAudio, { once: true });
+
+            // โหลดเฉพาะออร์เดอร์ย้อนหลัง ACTIVE_DAYS วัน (ไม่ดึงทั้งฐานข้อมูล)
+            const since = Date.now() - ACTIVE_DAYS * 86400000;
+            database.ref('tickets').orderByChild('timestamp').startAt(since).on('value', snap => {
+                activeOrders = [];
+                snap.forEach(child => { const o = child.val(); o.id = child.key; activeOrders.push(o); });
+
+                const pendingIds = openOrders().map(o => o.id);
+                if (knownIds === null) knownIds = new Set(pendingIds);
+                else {
+                    const fresh = openOrders().filter(o => !knownIds.has(o.id));
+                    pendingIds.forEach(id => knownIds.add(id));
+                    if (fresh.some(o => o.kind === 'cancel')) playCancelSound();
+                    else if (fresh.length) playNewOrderSound();
+                }
+                checkQueueAlertVisibility();
+                renderOrders();
+            });
+
+            // เตือนซ้ำทุก 5 นาที ถ้ายังมีออร์เดอร์ค้าง
+            setInterval(() => { if (openOrders().length > 0) playReminderSound(); }, 300000);
+            // อัปเดตเวลารอทุก 30 วินาที
+            setInterval(() => { if (currentTab === 'main') renderOrders(); }, 30000);
+        }
+
+        function loadHistory() {
+            const dateStr = document.getElementById('history-date-input').value;
+            if (historyRef) { historyRef.off(); historyRef = null; }
+            if (!dateStr) { historyOrders = []; renderOrders(); return; }
+            const r = dayRange(dateStr);
+            historyRef = database.ref('tickets').orderByChild('timestamp').startAt(r.start).endAt(r.end);
+            historyRef.on('value', snap => {
+                historyOrders = [];
+                snap.forEach(child => { const o = child.val(); o.id = child.key; historyOrders.push(o); });
+                renderOrders();
+            });
+        }
+
+        /* ---------------- แสดงผล ---------------- */
+        function renderOrders() {
+            const container = document.getElementById('kitchen-orders-container');
+            let list;
+            if (currentTab === 'main') list = openOrders().slice(0, 6);
+            else list = historyOrders.filter(o => o.status === 'completed' || o.status === 'canceled').sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
             let html = '';
+            const now = Date.now();
+            list.forEach(order => {
+                const status = order.status || 'pending';
+                const isCancel = order.kind === 'cancel';
+                let cardClass = isCancel ? 'cancel' : '', btnText = '', btnClass = '';
+                if (currentTab === 'main') {
+                    if (isCancel) { btnText = 'รับทราบการยกเลิก'; btnClass = 'cooking'; }
+                    else if (status === 'cooking') { cardClass = 'cooking'; btnText = 'กำลังทำอยู่... (กดเมื่อเสร็จ)'; btnClass = 'cooking'; }
+                    else btnText = 'รับออร์เดอร์ (เริ่มทำ)';
+                } else { cardClass = isCancel ? 'cancel' : 'completed'; btnText = order.status === 'canceled' ? 'ยกเลิกแล้ว' : 'เสร็จสิ้น ✓'; btnClass = 'completed'; }
 
-            if (currentTab === 'active') {
-                if (activeOrders.length === 0) {
-                    html = '<div class="no-order">😴 ຍັງບໍ່ມີອໍເດີ້ໃໝ່ໃນຂະນະນີ້...</div>';
-                } else {
-                    let cardsHtml = activeOrders.map((order, index) => generateOrderCard(order, index + 1)).join('');
-                    html = `<div class="order-container">${cardsHtml}</div>`;
-                }
-            } else if (currentTab === 'history') {
-                html += `<div style="text-align: right; margin-bottom: 15px;"><button class="clear-btn-disabled" disabled>🔒 ລະບົບແບ່ງເກັບປະຫວັດເປັນລາຍວັນອັດຕະໂນມັດ</button></div>`;
-                if (completedOrders.length === 0) {
-                    html += '<div class="no-order">📭 ຍັງບໍ່ມີປະຫວັດອໍເດີ້ທີ່ເຮັດສຳເລັດແລ້ວ...</div>';
-                } else {
-                    let groups = {};
-                    completedOrders.forEach((order) => {
-                        let d = order.date || todayStr;
-                        if(!groups[d]) groups[d] = [];
-                        groups[d].push(order);
-                    });
-                    let sortedDates = Object.keys(groups).sort((a,b) => b.split('/').reverse().join('').localeCompare(a.split('/').reverse().join('')));
-                    html += `<div class="order-container">`;
-                    sortedDates.forEach(date => {
-                        html += `<div class="date-separator">📅 ວັນທີ: ${date}</div>`;
-                        let cardsHtml = groups[date].map((order, idx) => generateOrderCard(order, idx + 1)).join('');
-                        html += cardsHtml;
-                    });
-                    html += `</div>`;
-                }
-            } else if (currentTab === 'cancelled') {
-                if (cancelledOrders.length === 0) {
-                    html = '<div class="no-order">📭 ຍັງບໍ່ມີອໍເດີ້ທີ່ຖືກຍົກເລີກ...</div>';
-                } else {
-                    let cardsHtml = cancelledOrders.map((order, index) => generateOrderCard(order, index + 1)).join('');
-                    html = `<div class="order-container">${cardsHtml}</div>`;
-                }
-            }
-
-            orderListArea.innerHTML = html;
-        }
-
-        function generateOrderCard(order, displaySeq) {
-            let isCompleted = order.status === 'completed';
-            let isCancelled = order.status === 'cancelled';
-            let isStore = (order.source === 'store') || (order.table && order.table.startsWith('AUG'));
-            
-            let badgeHtml = isStore 
-                ? `<span style="background-color: #1a365d; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">🏪 ໜ້າຮ້ານ</span>`
-                : `<span style="background-color: #d97706; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">📱 ອອນລາຍ</span>`;
-
-            let rawTable = order.table || '-';
-            let orderNo = rawTable;
-            let customerName = '';
-            let customerPhone = '';
-            let cleanPhoneForWa = '';
-
-            if (rawTable.includes(' - 📞 ')) {
-                let parts = rawTable.split(' - 📞 ');
-                customerPhone = parts[1];
-                cleanPhoneForWa = customerPhone.replace(/\D/g, ''); // ดึงเฉพาะตัวเลขสำหรับส่งลิงก์ WhatsApp
-                let leftPart = parts[0];
-                if (leftPart.includes('(') && leftPart.includes(')')) {
-                    let nameStart = leftPart.indexOf('(');
-                    let nameEnd = leftPart.indexOf(')');
-                    customerName = leftPart.substring(nameStart + 1, nameEnd);
-                    orderNo = leftPart.substring(0, nameStart).trim();
-                } else {
-                    orderNo = leftPart;
-                }
-            } else {
-                if (rawTable.includes('(') && rawTable.includes(')')) {
-                    let nameStart = rawTable.indexOf('(');
-                    let nameEnd = rawTable.indexOf(')');
-                    customerName = rawTable.substring(nameStart + 1, nameEnd);
-                    orderNo = rawTable.substring(0, nameStart).trim();
-                }
-            }
-
-            let itemsHtml = '';
-            if(order.items && order.items.length > 0) {
-                order.items.forEach(item => {
-                    let itemPrice = Number(item.price * item.quantity || 0).toLocaleString();
-                    itemsHtml += `
-                        <li>
-                            <span style="padding-right: 15px;">${item.name} (x${item.quantity})</span> 
-                            <span style="white-space: nowrap; font-weight: 500;">${itemPrice} LAK</span>
-                        </li>
-                    `;
+                let itemsHtml = '';
+                Object.values(order.items || {}).forEach(item => {
+                    const details = [item.variant].concat(Object.values(item.modifiers || {}).map(m => m.option)).filter(Boolean).join(' | ');
+                    itemsHtml += `<div class="order-item-row"><div><div class="item-name-qty"><b>${esc(item.quantity)}x</b> ${esc(item.name)} ${details ? '(' + esc(details) + ')' : ''}</div>${item.note ? '<div class="item-note">Note: ' + esc(item.note) + '</div>' : ''}</div></div>`;
                 });
-            }
-            let totalPrice = Number(order.total || 0).toLocaleString();
 
-            // สร้างลิงก์คลิกเปิดแชท WhatsApp อัตโนมัติ
-            let phoneDisplayHtml = '';
-            if (customerPhone) {
-                let waChatUrl = `https://wa.me/${cleanPhoneForWa}?text=` + encodeURIComponent(`ສະບາຍດີครับ/ค่ะ ร้าน AUGUSTX HOME COFFEE ติดต่อสอบถามเกี่ยวกับออร์เดอร์เลขที่ ${orderNo}`);
-                phoneDisplayHtml = `<div style="font-size: 14px; font-weight: 500;"><a href="${waChatUrl}" target="_blank" class="phone-link" title="คลิกเพื่อแชท WhatsApp">📞 ໂທ: ${customerPhone}</a></div>`;
-            }
+                let waitHtml = '';
+                if (currentTab === 'main' && order.timestamp) {
+                    const mins = Math.floor((now - order.timestamp) / 60000);
+                    const cls = mins >= 20 ? 'late' : (mins >= 10 ? 'warn' : '');
+                    waitHtml = `<span class="wait-badge ${cls}">รอ ${mins} นาที</span>`;
+                }
+                const noHtml = order.orderNo ? `<span class="order-no">#${esc(order.orderNo)}</span>` : '';
+                const kindBadge = isCancel ? '<span class="kind-badge cancel">ยกเลิก</span>' : (order.kind === 'add' ? '<span class="kind-badge add">เพิ่ม รอบ ' + esc(order.round || '') + '</span>' : '');
+                const noteHtml = isCancel && order.note ? `<div class="cancel-note">${esc(order.note)}</div>` : '';
+                const undo = (currentTab === 'main' && status === 'cooking') ? `<button class="undo-btn" title="ย้อนกลับเป็นรอรับ" onclick="revertStatus('${esc(order.id)}')">↩</button>` : '';
 
-            return `
-                <div class="order-card ${isCompleted ? 'completed' : ''} ${isCancelled ? 'cancelled' : ''}">
-                    <div class="order-header">
-                        <div style="display: flex; flex-direction: column; gap: 5px; width: 75%;">
-                            <div style="font-size: 16px; font-weight: bold; color: #1a365d;">ເລກທີ: ${orderNo}</div>
-                            ${customerName ? `<div style="font-size: 15px; color: #334155; font-weight: 600;">👤 ຊື່: ${customerName}</div>` : ''}
-                            ${phoneDisplayHtml}
-                            <div style="margin-top: 2px;">${badgeHtml}</div>
-                            <div style="font-size: 15px; color: #475569; font-weight: bold; margin-top: 4px;">⏰ ເວລາສັ່ງ: ${order.time || '-'}</div>
-                        </div>
-                        <div class="right-header-actions">
-                            ${!isCancelled && !isCompleted ? `<button class="btn-cancel-x" title="ຍົກເລີກອໍເດີ້" onclick="confirmCancelOrder('${order.id}', '${orderNo}')">✕</button>` : ''}
-                            <span class="order-sequence-badge">#${displaySeq}</span>
-                        </div>
+                html += `<div class="order-card ${cardClass}">
+                    <div class="order-card-header">
+                        <span class="order-table-badge">${esc(order.name || 'ลูกค้าทั่วไป')}${noHtml}${kindBadge}</span>
+                        <span class="order-time">${order.timestamp ? timeHHMM(order.timestamp) : esc(order.date || '')}${waitHtml}</span>
                     </div>
-                    
-                    <ul class="order-items">
-                        ${itemsHtml}
-                    </ul>
-                    <p style="font-size: 16px; margin-bottom: 0;"><strong>ຍອດລວມ:</strong> <span style="white-space: nowrap; color: #d97706;">${totalPrice} LAK</span></p>
-                    
-                    ${isCancelled 
-                        ? `<button class="btn-restore" onclick="restoreOrder('${order.id}')">🔄 กู้คืนออร์เดอร์นี้กลับมา</button>`
-                        : (!isCompleted 
-                            ? `<button class="btn-done" onclick="completeOrder('${order.id}')">✔ ພ້ອມເສີບ / ສຳເລັດແລ້ວ</button>` 
-                            : `<div style="text-align:center; color: #10b981; font-weight:bold; margin-top: 15px; padding: 10px; background: #e6f6ec; border-radius: 4px;">✅ ເສີບສຳເລັດແລ້ວ</div>`
-                        )
-                    }
-                </div>
-            `;
-        }
-
-        function confirmCancelOrder(orderId, orderNo) {
-            let firstCheck = confirm(`⚠ ທ່ານຕ້ອງການຍົກເລີກອໍເດີ້ "${orderNo}" ແທ້ ຫຼື ບໍ່?`);
-            if (firstCheck) {
-                let secondCheck = confirm(`🚨 ຢືນຢັນຄັ້ງສຸດທ້າຍ! ຕ້ອງການຍົກເລີກອໍເດີ້ວ່ານີ້ແທ້ໆ ບໍ?`);
-                if (secondCheck) {
-                    database.ref('orders/' + orderId).update({
-                        status: 'cancelled'
-                    });
-                }
-            }
-        }
-
-        function restoreOrder(orderId) {
-            let check = confirm(`🔄 ຕ້ອງການກູ້ຄືນອໍເດີ້ວ່ານີ້ກັບຄືນມາກຳລັງເຮັດແມ່ນບໍ?`);
-            if (check) {
-                database.ref('orders/' + orderId).update({
-                    status: 'pending'
-                });
-            }
-        }
-
-        function completeOrder(orderId) {
-            database.ref('orders/' + orderId).update({
-                status: 'completed'
-            }).then(() => {
-                lastPendingCount = Math.max(0, lastPendingCount - 1); 
+                    <div class="order-card-body">${noteHtml}${itemsHtml}</div>
+                    <div class="order-card-footer">
+                        <span><span class="order-source-badge">${esc(order.source || 'store')} (${esc(order.orderType || '-')})</span></span>
+                        <div class="footer-btns">${undo}<button class="action-btn ${btnClass}" onclick="advanceOrderStatus('${esc(order.id)}', '${esc(status)}', '${isCancel ? 'c' : ''}')">${btnText}</button></div>
+                    </div>
+                </div>`;
             });
+
+            if (list.length === 0) {
+                const msg = currentTab === 'main' ? '🎉 ไม่มีออร์เดอร์ค้างในขณะนี้ เรียบร้อยดีครับ!' : '📜 ไม่พบประวัติออร์เดอร์ในวันที่เลือก';
+                container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; color:#94a3b8; padding:80px; font-size:1.2rem;">${msg}</div>`;
+            } else container.innerHTML = html;
         }
+
+        function advanceOrderStatus(orderId, currentStatus, isCancelTicket) {
+            if (currentStatus === 'completed' || currentStatus === 'void') return;
+            if (currentStatus === 'canceled') return;
+            const next = (currentStatus === 'pending' && !isCancelTicket) ? 'cooking' : 'completed';
+            database.ref('tickets/' + orderId).update({ status: next });
+            if (!isCancelTicket) syncTrack(orderId, next);
+        }
+        function revertStatus(orderId) {
+            database.ref('tickets/' + orderId).update({ status: 'pending' });
+            syncTrack(orderId, 'pending');
+        }
+        // ออร์เดอร์ที่ลูกค้าสั่งออนไลน์: อัปเดตหน้าติดตามของลูกค้า (เริ่มทำ → กำลังทำ, เสร็จ → พร้อมรับ / รอส่ง)
+        function syncTrack(orderId, ticketStatus) {
+            const t = activeOrders.find(o => o.id === orderId);
+            if (!t || !t.trackTok) return;
+            const next = ticketStatus === 'cooking' ? 'making' : ticketStatus === 'completed' ? (t.trackDelivery ? 'packed' : 'ready') : 'accepted';
+            database.ref('order_track/' + t.trackTok + '/status').transaction(cur => {
+                if (cur === null) return next; // ยังไม่มีข้อมูลในเครื่อง: Firebase จะส่งค่าจริงมาให้คิดใหม่
+                if (cur === 'delivering' || cur === 'rejected') return;
+                if (cur === 'ready' && next !== 'ready') return;
+                return next;
+            }).catch(() => {});
+        }
+
+        startApp('staff', startListeners);
     </script>
+<script>
+/* เต็มจอ: เปิดจากไอคอนหน้าจอหลัก = เต็มจออัตโนมัติ / เปิดจากเบราว์เซอร์ = แตะจอครั้งแรกแล้วขอเต็มจอ */
+(function(){var app=matchMedia('(display-mode: fullscreen)').matches||matchMedia('(display-mode: standalone)').matches;
+if(app||!document.documentElement.requestFullscreen)return;
+document.addEventListener('click',function f(){document.removeEventListener('click',f,true);document.documentElement.requestFullscreen().catch(function(){});},true);})();
+</script>
+    <script src="theme7.js"></script>
 </body>
 </html>
